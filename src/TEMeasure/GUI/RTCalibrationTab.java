@@ -81,7 +81,8 @@ public class RTCalibrationTab extends Grid {
         heaterPPlot.showLegend(false);
         rtPlot.showLegend(false);
 
-        addToolbarButton("Run", this::run);
+        addToolbarButton("Start", this::run);
+        addToolbarButton("Stop", this::stop);
 
         fillDefaults();
 
@@ -99,46 +100,60 @@ public class RTCalibrationTab extends Grid {
         rtSteps.set(1);
         rtTime.set(0.1);
 
-        intTime.set(10.0/50.0);
+        intTime.set(10.0 / 50.0);
 
     }
 
-    public void run() throws IOException, DeviceException {
+    public void run() {
 
-        SMU                heaterVoltage = heaterSMU.getSMU();
-        SMU                rtMeasure     = rtSMU.getSMU();
-        TController        stageTemp     = stageTC.getTController();
-        LinkedList<String> errors        = new LinkedList<>();
+        try {
+            SMU                heaterVoltage = heaterSMU.getSMU();
+            SMU                rtMeasure     = rtSMU.getSMU();
+            TController        stageTemp     = stageTC.getTController();
+            LinkedList<String> errors        = new LinkedList<>();
 
-        if (heaterVoltage == null) {
-            errors.add("Heater SMU is not configured.");
+            if (heaterVoltage == null) {
+                errors.add("Heater SMU is not configured.");
+            }
+
+            if (rtMeasure == null) {
+                errors.add("RT SMU is not configured.");
+            }
+
+            if (stageTemp == null) {
+                errors.add("Stage T-Controller is not configured.");
+            }
+
+            if (outputFile.get().trim().equals("")) {
+                errors.add("No output file specified.");
+            }
+
+            if (!errors.isEmpty()) {
+                GUI.errorAlert("Error", "Error Starting Measurement", String.join("\n\n", errors), 600);
+                return;
+            }
+
+            measurement = new RTCalibration(heaterVoltage, rtMeasure, stageTemp);
+
+            measurement.configureRT(rtStart.get() * 1e-6, rtStop.get() * 1e-6, rtSteps.get())
+                       .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
+                       .configureTiming(heaterTime.get(), rtTime.get(), intTime.get());
+
+            ResultTable results = measurement.newResults(outputFile.get());
+
+            heaterVPlot.clear();
+            heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
+
+            heaterPPlot.clear();
+            heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
+
+            rtPlot.clear();
+            rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CYAN);
+
+            measurement.performMeasurement();
+        } catch (Exception e) {
+            GUI.errorAlert("Error", "Exception Encountered", e.getMessage(), 600);
         }
-
-        if (rtMeasure == null) {
-            errors.add("RT SMU is not configured.");
-        }
-
-        if (stageTemp == null) {
-            errors.add("Stage T-Controller is not configured.");
-        }
-
-        if (outputFile.get().trim().equals("")) {
-            errors.add("No output file specified.");
-        }
-
-        if (!errors.isEmpty()) {
-            GUI.errorAlert("Error", "Error Starting Measurement", String.join("\n\n", errors), 600);
-            return;
-        }
-
-        measurement = new RTCalibration(heaterVoltage, rtMeasure, stageTemp);
-
-        measurement.configureRT(rtStart.get() * 1e-6, rtStop.get() * 1e-6, rtSteps.get())
-                   .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
-                   .configureTiming(heaterTime.get(), rtTime.get(), intTime.get());
-
-        ResultTable results = measurement.newResults(outputFile.get());
-
 
     }
 

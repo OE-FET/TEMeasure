@@ -83,7 +83,8 @@ public class GatedTEMTab extends Grid {
         gatePlot.showLegend(false);
         thermalPlot.showLegend(false);
 
-        addToolbarButton("Run", this::run);
+        addToolbarButton("Start", this::run);
+        addToolbarButton("Stop", this::stop);
 
         fillDefaults();
 
@@ -107,56 +108,64 @@ public class GatedTEMTab extends Grid {
 
     public void run() throws IOException, DeviceException {
 
-        SMU                thermoVoltage = tvSMU.getSMU();
-        SMU                gateVoltage   = gateSMU.getSMU();
-        SMU                heaterVoltage = heaterSMU.getSMU();
-        TController        stageTemp     = stageTC.getTController();
-        LinkedList<String> errors        = new LinkedList<>();
+        try {
 
-        if (thermoVoltage == null) {
-            errors.add("Thermo-Voltage SMU is not configured.");
+            SMU                thermoVoltage = tvSMU.getSMU();
+            SMU                gateVoltage   = gateSMU.getSMU();
+            SMU                heaterVoltage = heaterSMU.getSMU();
+            TController        stageTemp     = stageTC.getTController();
+            LinkedList<String> errors        = new LinkedList<>();
+
+            if (thermoVoltage == null) {
+                errors.add("Thermo-Voltage SMU is not configured.");
+            }
+
+            if (gateVoltage == null) {
+                errors.add("Gate SMU is not configured.");
+            }
+
+            if (heaterVoltage == null) {
+                errors.add("Heater SMU is not configured.");
+            }
+
+            if (stageTemp == null) {
+                errors.add("Stage T-Controller is not configured.");
+            }
+
+            if (outputFile.get().trim().equals("")) {
+                errors.add("No output file specified.");
+            }
+
+            if (!errors.isEmpty()) {
+                GUI.errorAlert("Error", "Error Starting Measurement", String.join("\n\n", errors), 600);
+                return;
+            }
+
+            measurement = new GatedTEM(thermoVoltage, gateVoltage, heaterVoltage, stageTemp);
+
+            measurement.configureGate(gateStart.get(), gateStop.get(), gateSteps.get())
+                       .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
+                       .configureTiming(gateTime.get(), heaterTime.get(), intTime.get());
+
+            ResultTable results = measurement.newResults(outputFile.get());
+
+            heaterPlot.clear();
+            heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
+
+            gatePlot.clear();
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CYAN);
+
+            thermalPlot.clear();
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
+
+            tpPlot.clear();
+            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
+
+            measurement.performMeasurement();
+
+        } catch (Exception e) {
+            GUI.errorAlert("Error", "Exception Encountered", e.getMessage());
         }
-
-        if (gateVoltage == null) {
-            errors.add("Gate SMU is not configured.");
-        }
-
-        if (heaterVoltage == null) {
-            errors.add("Heater SMU is not configured.");
-        }
-
-        if (stageTemp == null) {
-            errors.add("Stage T-Controller is not configured.");
-        }
-
-        if (outputFile.get().trim().equals("")) {
-            errors.add("No output file specified.");
-        }
-
-        if (!errors.isEmpty()) {
-            GUI.errorAlert("Error", "Error Starting Measurement", String.join("\n\n", errors), 600);
-            return;
-        }
-
-        measurement = new GatedTEM(thermoVoltage, gateVoltage, heaterVoltage, stageTemp);
-
-        measurement.configureGate(gateStart.get(), gateStop.get(), gateSteps.get())
-                   .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
-                   .configureTiming(gateTime.get(), heaterTime.get(), intTime.get());
-
-        ResultTable results = measurement.newResults(outputFile.get());
-
-        heaterPlot.clear();
-        heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
-
-        gatePlot.clear();
-        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CYAN);
-
-        thermalPlot.clear();
-        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
-
-        tpPlot.clear();
-        tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
 
     }
 
