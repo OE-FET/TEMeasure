@@ -152,6 +152,7 @@ public class RTCalibrationTab extends Grid {
 
             measurement.performMeasurement();
         } catch (Exception e) {
+            e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage(), 600);
         }
 
