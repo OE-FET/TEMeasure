@@ -1,5 +1,6 @@
 package TEMeasure.GUI;
 
+import JISA.Control.ConfigStore;
 import JISA.Devices.SMU;
 import JISA.Devices.TController;
 import JISA.GUI.ConfigGrid;
@@ -20,8 +21,8 @@ public class ConnectionTab extends ConfigGrid {
     public InstrumentConfig<TController>[] tcs;
 
     @SuppressWarnings("unchecked")
-    public ConnectionTab() {
-        super("Connections");
+    public ConnectionTab(ConfigStore configStore) {
+        super("Connections", configStore);
         setNumColumns(2);
         setGrowth(false, false);
 

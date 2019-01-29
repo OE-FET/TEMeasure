@@ -15,7 +15,8 @@ public class GatedTEM {
     private boolean running = false;
 
     private SMU         thermoVoltage;
-    private SMU         gate;
+    private SMU         hotGate;
+    private SMU         coldGate;
     private SMU         heater;
     private TController stage;
 
@@ -35,8 +36,8 @@ public class GatedTEM {
     private int numSteps    = gateSteps * heaterSteps;
 
     private             ResultTable results;
-    public static final String[]    COLUMNS = {"No.", "Stage Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set"};
-    public static final String[]    UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V"};
+    public static final String[]    COLUMNS = {"No.", "Stage Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
+    public static final String[]    UNITS   = {"~", "K", "V", "A", "V", "A", "uW", "uV", "V", "~"};
 
     public static final int COL_NUMBER            = 0;
     public static final int COL_STAGE_TEMPERATURE = 1;
@@ -47,10 +48,12 @@ public class GatedTEM {
     public static final int COL_HEATER_POWER      = 6;
     public static final int COL_THERMO_VOLTAGE    = 7;
     public static final int COL_GATE_SET_VOLTAGE  = 8;
+    public static final int COL_GATE_CONFIG       = 9;
 
-    public GatedTEM(SMU thermoVoltageSMU, SMU gateSMU, SMU heaterSMU, TController stageController) {
+    public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TController stageController) {
         thermoVoltage = thermoVoltageSMU;
-        gate = gateSMU;
+        hotGate = hotGateSMU;
+        coldGate = coldGateSMU;
         heater = heaterSMU;
         stage = stageController;
     }
@@ -155,11 +158,13 @@ public class GatedTEM {
 
             // Make sure outputs are disabled to begin with
             thermoVoltage.turnOff();
-            gate.turnOff();
+            hotGate.turnOff();
+            coldGate.turnOff();
             heater.turnOff();
 
             thermoVoltage.useFourProbe(false);
-            gate.useFourProbe(false);
+            hotGate.useFourProbe(false);
+            coldGate.useFourProbe(false);
             heater.useFourProbe(false);
 
             // Set integration time of thermo-voltage smu
@@ -167,8 +172,10 @@ public class GatedTEM {
             thermoVoltage.useAutoRanges();
             thermoVoltage.setCurrent(0.0);
 
-            gate.useAutoRanges();
-            gate.setVoltage(gateStart);
+            hotGate.useAutoRanges();
+            hotGate.setVoltage(gateStart);
+            coldGate.useAutoRanges();
+            coldGate.setVoltage(gateStart);
 
             heater.useAutoRanges();
             heater.setVoltage(heaterStart);
@@ -176,50 +183,73 @@ public class GatedTEM {
             double[] gates   = Util.makeLinearArray(gateStart, gateStop, gateSteps);
             double[] heaters = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
 
-            thermoVoltage.turnOn();
-            gate.turnOn();
-
+            double config = 0;
             mainLoop:
-            for (double G : gates) {
+            for (SMU gate : new SMU[]{hotGate, coldGate}) {
 
-                gate.setVoltage(G);
-                Util.sleep(gateDelay);
+                thermoVoltage.turnOn();
+                gate.turnOn();
 
-                heater.setVoltage(heaterStart);
-                heater.turnOn();
+                if (!running) {
+                    break mainLoop;
+                }
 
-                for (double H : heaters) {
+                for (double G : gates) {
 
-                    heater.setVoltage(H);
-                    Util.sleep(heaterDelay);
+                    gate.setVoltage(G);
+                    Util.sleep(gateDelay);
 
-                    double heaterVoltage = heater.getVoltage();
-                    double heaterCurrent = heater.getCurrent();
-                    double heaterPower   = heaterVoltage * heaterCurrent;
-
-                    results.addData(
-                            (double) currentStep,
-                            stage.getTemperature(),
-                            gate.getVoltage(),
-                            gate.getCurrent(),
-                            heaterVoltage,
-                            heaterCurrent,
-                            heaterPower,
-                            thermoVoltage.getVoltage(),
-                            G
-                    );
-
-                    currentStep++;
+                    heater.setVoltage(heaterStart);
+                    heater.turnOn();
 
                     if (!running) {
                         break mainLoop;
                     }
 
+                    for (double H : heaters) {
+
+                        heater.setVoltage(H);
+                        Util.sleep(heaterDelay);
+
+                        double heaterVoltage = heater.getVoltage();
+                        double heaterCurrent = heater.getCurrent();
+                        double heaterPower = heaterVoltage * heaterCurrent;
+
+                        results.addData(
+                                (double) currentStep,
+                                stage.getTemperature(),
+                                gate.getVoltage(),
+                                gate.getCurrent(),
+                                heaterVoltage,
+                                heaterCurrent,
+                                heaterPower / 1e-6,
+                                thermoVoltage.getVoltage() / 1e-6,
+                                G,
+                                config
+                        );
+
+                        currentStep++;
+
+                        if (!running) {
+                            break mainLoop;
+                        }
+
+                    }
+
+                    heater.turnOff();
+                    Util.sleep(heaterDelay);
+
                 }
 
-                heater.turnOff();
-                Util.sleep(heaterDelay);
+                // Reverse gate voltages so that we go down in gate now
+                for(int i=0; i < gates.length/2; i++){
+                    double temp = gates[i];
+                    gates[i] = gates[gates.length -i -1];
+                    gates[gates.length -i -1] = temp;
+                }
 
+                // Next iteration will be cold-gate config
+                config = 1;
             }
 
         } finally {
@@ -228,7 +258,8 @@ public class GatedTEM {
 
             try {
                 heater.turnOff();
-                gate.turnOff();
+                hotGate.turnOff();
+                coldGate.turnOff();
                 thermoVoltage.turnOff();
             } catch (Exception ignored) {
             }

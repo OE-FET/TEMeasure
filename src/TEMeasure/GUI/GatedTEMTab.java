@@ -15,7 +15,8 @@ import java.util.LinkedList;
 public class GatedTEMTab extends Grid {
 
     private final SMUConfig heaterSMU;
-    private final SMUConfig gateSMU;
+    private final SMUConfig hotGateSMU;
+    private final SMUConfig coldGateSMU;
     private final SMUConfig tvSMU;
     private final TCConfig  stageTC;
     private final Fields    gateParams   = new Fields("Gate Parameters");
@@ -35,18 +36,19 @@ public class GatedTEMTab extends Grid {
     private final Field<Double> intTime;
     private final Field<String> outputFile;
 
-    private final Plot heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
+    private final Plot heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [uW]");
     private final Plot gatePlot    = new Plot("Gate Voltage", "Measurement No.", "Gate Voltage [V]");
-    private final Plot thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [V]");
-    private final Plot tpPlot      = new Plot("TV vs Power", "Heater Power [W]", "Thermo-Voltage [V]");
+    private final Plot thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [uV]");
+    private final Plot tpPlot      = new Plot("TV vs Power", "Heater Power [uW]", "Thermo-Voltage [uV]");
 
     private GatedTEM measurement = null;
 
-    public GatedTEMTab(SMUConfig heaterSMU, SMUConfig gateSMU, SMUConfig tvSMU, TCConfig stageTC) {
+    public GatedTEMTab(SMUConfig heaterSMU, SMUConfig hotGateSMU, SMUConfig coldGateSMU, SMUConfig tvSMU, TCConfig stageTC) {
 
         super("Gated TE Measurement");
         this.heaterSMU = heaterSMU;
-        this.gateSMU = gateSMU;
+        this.hotGateSMU = hotGateSMU;
+        this.coldGateSMU = coldGateSMU;
         this.tvSMU = tvSMU;
         this.stageTC = stageTC;
 
@@ -110,18 +112,23 @@ public class GatedTEMTab extends Grid {
 
         try {
 
-            SMU                thermoVoltage = tvSMU.getSMU();
-            SMU                gateVoltage   = gateSMU.getSMU();
-            SMU                heaterVoltage = heaterSMU.getSMU();
-            TController        stageTemp     = stageTC.getTController();
-            LinkedList<String> errors        = new LinkedList<>();
+            SMU                thermoVoltage   = tvSMU.getSMU();
+            SMU                hotGateVoltage  = hotGateSMU.getSMU();
+            SMU                coldGateVoltage = coldGateSMU.getSMU();
+            SMU                heaterVoltage   = heaterSMU.getSMU();
+            TController        stageTemp       = stageTC.getTController();
+            LinkedList<String> errors          = new LinkedList<>();
 
             if (thermoVoltage == null) {
                 errors.add("Thermo-Voltage SMU is not configured.");
             }
 
-            if (gateVoltage == null) {
-                errors.add("Gate SMU is not configured.");
+            if (hotGateVoltage == null) {
+                errors.add("Hot-Gate SMU is not configured.");
+            }
+
+            if (coldGateVoltage == null) {
+                errors.add("Cold-Gate SMU is not configured.");
             }
 
             if (heaterVoltage == null) {
@@ -141,7 +148,7 @@ public class GatedTEMTab extends Grid {
                 return;
             }
 
-            measurement = new GatedTEM(thermoVoltage, gateVoltage, heaterVoltage, stageTemp);
+            measurement = new GatedTEM(thermoVoltage, hotGateVoltage, coldGateVoltage, heaterVoltage, stageTemp);
 
             measurement.configureGate(gateStart.get(), gateStop.get(), gateSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
@@ -156,7 +163,7 @@ public class GatedTEMTab extends Grid {
             gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CYAN);
 
             thermalPlot.clear();
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
+            thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
 
             tpPlot.clear();
             tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
@@ -164,6 +171,7 @@ public class GatedTEMTab extends Grid {
             measurement.performMeasurement();
 
         } catch (Exception e) {
+            e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage());
         }
 

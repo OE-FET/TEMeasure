@@ -10,7 +10,8 @@ public class SMUConfigTab extends Grid {
     public  SMUConfig     heaterSMU;
     public  SMUConfig     rtSMU;
     public  SMUConfig     tvSMU;
-    public  SMUConfig     gateSMU;
+    public  SMUConfig     hotGateSMU;
+    public  SMUConfig     coldGateSMU;
     private ConnectionTab connectionTab;
 
     public SMUConfigTab(ConnectionTab connectionTab) {
@@ -22,12 +23,14 @@ public class SMUConfigTab extends Grid {
         heaterSMU = new SMUConfig("Heater SMU", connectionTab.smus);
         rtSMU = new SMUConfig("RT SMU", connectionTab.smus);
         tvSMU = new SMUConfig("Thermo-Voltage SMU", connectionTab.smus);
-        gateSMU = new SMUConfig("Gate SMU", connectionTab.smus);
+        hotGateSMU = new SMUConfig("Hot-Gate SMU", connectionTab.smus);
+        coldGateSMU = new SMUConfig("Cold-Gate SMU", connectionTab.smus);
 
         add(heaterSMU);
         add(rtSMU);
         add(tvSMU);
-        add(gateSMU);
+        add(hotGateSMU);
+        add(coldGateSMU);
 
     }
 }
