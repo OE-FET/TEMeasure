@@ -14,6 +14,7 @@ public class MainWindow extends Tabs {
     private TCConfigTab      tcConfigTab      = new TCConfigTab(connectionTab, configStore);
     private GatedTEMTab      gatedTEMTab      = new GatedTEMTab(smuConfigTab.heaterSMU, smuConfigTab.hotGateSMU, smuConfigTab.coldGateSMU, smuConfigTab.tvSMU, tcConfigTab.stage);
     private RTCalibrationTab rtCalibrationTab = new RTCalibrationTab(smuConfigTab.heaterSMU, smuConfigTab.rtSMU, tcConfigTab.stage);
+    private TempTab          tempTab          = new TempTab(tcConfigTab.stage, tcConfigTab.shield, tcConfigTab.fStage, tcConfigTab.sStage);
 
     public MainWindow() throws IOException {
         super("TEMeasure");
@@ -23,6 +24,7 @@ public class MainWindow extends Tabs {
         addTab(connectionTab);
         addTab(smuConfigTab);
         addTab(tcConfigTab);
+        addTab(tempTab);
         addTab(gatedTEMTab);
         addTab(rtCalibrationTab);
     }
