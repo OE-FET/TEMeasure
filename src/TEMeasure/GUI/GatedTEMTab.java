@@ -73,8 +73,8 @@ public class GatedTEMTab extends Grid {
         intTime = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
 
-        Grid topGrid = new Grid("Parameters", gateParams, heaterParams, otherParams);
-        Grid bottomGrid = new Grid("Results", heaterPlot, gatePlot, thermalPlot, tpPlot);
+        Grid topGrid = new Grid("", gateParams, heaterParams, otherParams);
+        Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
         bottomGrid.setNumColumns(2);
 
         add(topGrid);

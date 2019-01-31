@@ -70,8 +70,8 @@ public class RTCalibrationTab extends Grid {
         intTime = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
 
-        Grid topGrid = new Grid("Parameters", heaterParams, rtParams, otherParams);
-        Grid bottomGrid = new Grid("Results", heaterVPlot, heaterPPlot, rtPlot);
+        Grid topGrid = new Grid("", heaterParams, rtParams, otherParams);
+        Grid bottomGrid = new Grid("", heaterVPlot, heaterPPlot, rtPlot);
 
         add(topGrid);
         add(bottomGrid);
