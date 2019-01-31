@@ -16,7 +16,7 @@ public class TCConfigTab extends Grid {
     public TCConfigTab(ConnectionTab connectionTab, ConfigStore configStore) {
         super("T-Controller Config");
         setNumColumns(2);
-        setGrowth(false, false);
+        setGrowth(true, false);
 
         stage = new TCConfig("Sample", "sTC", configStore, connectionTab.tcs);
         shield = new TCConfig("Radiation Shield", "rTC", configStore, connectionTab.tcs);

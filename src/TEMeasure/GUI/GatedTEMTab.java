@@ -107,9 +107,26 @@ public class GatedTEMTab extends Grid {
 
     }
 
+    private void disableInputs(boolean disable) {
+
+        gateStart.setDisabled(disable);
+        gateStop.setDisabled(disable);
+        gateSteps.setDisabled(disable);
+        gateTime.setDisabled(disable);
+        heaterStart.setDisabled(disable);
+        heaterStop.setDisabled(disable);
+        heaterSteps.setDisabled(disable);
+        heaterTime.setDisabled(disable);
+        intTime.setDisabled(disable);
+        outputFile.setDisabled(disable);
+
+    }
+
     public void run() throws IOException, DeviceException {
 
         try {
+
+            disableInputs(true);
 
             SMU                thermoVoltage   = tvSMU.getSMU();
             SMU                hotGateVoltage  = hotGateSMU.getSMU();
@@ -174,6 +191,8 @@ public class GatedTEMTab extends Grid {
         } catch (Exception e) {
             e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage());
+        } finally {
+            disableInputs(false);
         }
 
     }

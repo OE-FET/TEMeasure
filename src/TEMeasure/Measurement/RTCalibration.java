@@ -54,7 +54,7 @@ public class RTCalibration {
     public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC) {
         heater = heaterSMU;
         rt = rtSMU;
-        stageTC = stageTC;
+        this.stageTC = stageTC;
     }
 
     /**

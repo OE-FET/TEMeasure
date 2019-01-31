@@ -24,7 +24,7 @@ public class ConnectionTab extends ConfigGrid {
     public ConnectionTab(ConfigStore configStore) {
         super("Connections", configStore);
         setNumColumns(2);
-        setGrowth(false, false);
+        setGrowth(true, false);
 
         smu1 = addInstrument("SMU 1", SMU.class);
         smu2 = addInstrument("SMU 2", SMU.class);
@@ -37,6 +37,8 @@ public class ConnectionTab extends ConfigGrid {
 
         smus = new InstrumentConfig[]{smu1, smu2, smu3, smu4};
         tcs  = new InstrumentConfig[]{tc1, tc2, tc3, tc4};
+
+        connectAll();
 
     }
 }

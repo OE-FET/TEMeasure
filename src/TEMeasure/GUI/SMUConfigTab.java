@@ -18,7 +18,7 @@ public class SMUConfigTab extends Grid {
     public SMUConfigTab(ConnectionTab connectionTab, ConfigStore configStore) {
         super("SMU Config");
         setNumColumns(2);
-        setGrowth(false, false);
+        setGrowth(true, false);
         this.connectionTab = connectionTab;
 
         heaterSMU = new SMUConfig("Heater SMU", "heaterSMU", configStore, connectionTab.smus);

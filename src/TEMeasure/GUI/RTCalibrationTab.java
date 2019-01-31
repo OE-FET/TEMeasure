@@ -37,7 +37,7 @@ public class RTCalibrationTab extends Grid {
     private final Field<String> outputFile;
 
     private final Plot heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
-    private final Plot heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [V]");
+    private final Plot heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
     private final Plot rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
 
     private RTCalibration measurement = null;
@@ -87,6 +87,22 @@ public class RTCalibrationTab extends Grid {
 
     }
 
+    private void disableInputs(boolean disable) {
+
+        rtStart.setDisabled(disable);
+        rtStop.setDisabled(disable);
+        rtSteps.setDisabled(disable);
+        rtTime.setDisabled(disable);
+        heaterStart.setDisabled(disable);
+        heaterStop.setDisabled(disable);
+        heaterSteps.setDisabled(disable);
+        heaterTime.setDisabled(disable);
+        intTime.setDisabled(disable);
+        outputFile.setDisabled(disable);
+        nSweeps.setDisabled(disable);
+
+    }
+
     private void fillDefaults() {
 
         heaterStart.set(0.0);
@@ -107,6 +123,9 @@ public class RTCalibrationTab extends Grid {
     public void run() {
 
         try {
+
+            disableInputs(true);
+
             SMU                heaterVoltage = heaterSMU.getSMU();
             SMU                rtMeasure     = rtSMU.getSMU();
             TC                 stageTemp     = stageTC.getTController();
@@ -158,6 +177,8 @@ public class RTCalibrationTab extends Grid {
         } catch (Exception e) {
             e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage(), 600);
+        } finally {
+            disableInputs(false);
         }
 
     }
