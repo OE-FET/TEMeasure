@@ -30,7 +30,9 @@ public class TempTab extends Grid {
         Plot tPlot = new Plot("Temperatures", "Time [s]", "Temperature [K]");
         Plot hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
         tPlot.showMarkers(false);
+        tPlot.setMaxRange(3600);
         hPlot.showMarkers(false);
+        hPlot.setMaxRange(3600);
 
         add(tPlot);
         add(hPlot);
@@ -85,7 +87,7 @@ public class TempTab extends Grid {
         hPlot.watchList(log, 0, 7, "First Stage", Color.GREEN);
         hPlot.watchList(log, 0, 8, "Second Stage", Color.BLUE);
 
-        logger = new RTask(1000, () -> {
+        logger = new RTask(5000, () -> {
             log.addData(
                     logger.getSecFromStart(),
                     sample.getTemperature(),

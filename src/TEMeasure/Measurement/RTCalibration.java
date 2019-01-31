@@ -14,6 +14,7 @@ import java.io.IOException;
 public class RTCalibration {
 
     private boolean running = false;
+    private boolean stopped = false;
 
     private SMU         heater;
     private SMU         rt;
@@ -147,6 +148,8 @@ public class RTCalibration {
 
     public void performMeasurement() throws IOException, DeviceException {
 
+        stopped = false;
+
         try {
 
             running = true;
@@ -247,6 +250,11 @@ public class RTCalibration {
 
     public void stop() {
         running = false;
+        stopped = true;
+    }
+
+    public boolean wasStopped() {
+        return stopped;
     }
 
 }

@@ -13,12 +13,13 @@ import java.io.IOException;
 public class GatedTEM {
 
     private boolean running = false;
+    private boolean stopped = false;
 
-    private SMU         thermoVoltage;
-    private SMU         hotGate;
-    private SMU         coldGate;
-    private SMU         heater;
-    private TC stage;
+    private SMU thermoVoltage;
+    private SMU hotGate;
+    private SMU coldGate;
+    private SMU heater;
+    private TC  stage;
 
     private double gateStart = -40;
     private double gateStop  = 0;
@@ -149,6 +150,8 @@ public class GatedTEM {
      */
     public void performMeasurement() throws IOException, DeviceException {
 
+        stopped = false;
+
         try {
 
             running = true;
@@ -277,8 +280,13 @@ public class GatedTEM {
         return running;
     }
 
+    public boolean wasStopped() {
+        return stopped;
+    }
+
     public void stop() {
         running = false;
+        stopped = true;
     }
 
 }

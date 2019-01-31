@@ -36,9 +36,11 @@ public class RTCalibrationTab extends Grid {
     private final Field<Double> intTime;
     private final Field<String> outputFile;
 
-    private final Plot heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
-    private final Plot heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
-    private final Plot rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
+    private final Plot  heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
+    private final Plot  heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
+    private final Plot  rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
+    private final Table table       = new Table("Table of Results");
+    private Thread runner;
 
     private RTCalibration measurement = null;
 
@@ -75,6 +77,7 @@ public class RTCalibrationTab extends Grid {
 
         add(topGrid);
         add(bottomGrid);
+        add(new Grid("", table));
 
         heaterVPlot.showLegend(false);
         heaterPPlot.showLegend(false);
@@ -124,6 +127,8 @@ public class RTCalibrationTab extends Grid {
 
         try {
 
+            runner = Thread.currentThread();
+
             disableInputs(true);
 
             SMU                heaterVoltage = heaterSMU.getSMU();
@@ -170,9 +175,16 @@ public class RTCalibrationTab extends Grid {
             rtPlot.clear();
             rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
 
+            table.clear();
+            table.watchList(results);
+
             measurement.performMeasurement();
 
-            GUI.infoAlert("Complete", "Measurement Complete", "The measurement completed without error.");
+            if (measurement.wasStopped()) {
+                GUI.infoAlert("Stopped", "Measurement Stopped", "The measurement was stopped.");
+            } else {
+                GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -186,6 +198,7 @@ public class RTCalibrationTab extends Grid {
     public void stop() {
         if (measurement != null) {
             measurement.stop();
+            runner.interrupt();
         }
     }
 

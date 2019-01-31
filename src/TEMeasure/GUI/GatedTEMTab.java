@@ -36,10 +36,13 @@ public class GatedTEMTab extends Grid {
     private final Field<Double> intTime;
     private final Field<String> outputFile;
 
-    private final Plot heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [uW]");
-    private final Plot gatePlot    = new Plot("Gate Voltage", "Measurement No.", "Gate Voltage [V]");
-    private final Plot thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [uV]");
-    private final Plot tpPlot      = new Plot("TV vs Power", "Heater Power [uW]", "Thermo-Voltage [uV]");
+    private final Plot  heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [uW]");
+    private final Plot  gatePlot    = new Plot("Gate Voltage", "Measurement No.", "Gate Voltage [V]");
+    private final Plot  thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [uV]");
+    private final Plot  tpPlot      = new Plot("TV vs Power", "Heater Power [uW]", "Thermo-Voltage [uV]");
+    private final Table table      = new Table("Table of Results");
+
+    private Thread runner;
 
     private GatedTEM measurement = null;
 
@@ -75,10 +78,11 @@ public class GatedTEMTab extends Grid {
 
         Grid topGrid = new Grid("", gateParams, heaterParams, otherParams);
         Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
-        bottomGrid.setNumColumns(2);
+        bottomGrid.setNumColumns(2);;
 
         add(topGrid);
         add(bottomGrid);
+        add(new Grid("", table));
 
         heaterPlot.showLegend(false);
         gatePlot.showLegend(false);
@@ -125,6 +129,8 @@ public class GatedTEMTab extends Grid {
     public void run() throws IOException, DeviceException {
 
         try {
+
+            runner = Thread.currentThread();
 
             disableInputs(true);
 
@@ -184,9 +190,16 @@ public class GatedTEMTab extends Grid {
             tpPlot.clear();
             tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
 
+            table.clear();
+            table.watchList(results);
+
             measurement.performMeasurement();
 
-            GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
+            if (measurement.wasStopped()) {
+                GUI.infoAlert("Stopped", "Measurement Stopped", "The measurement was stopped.");
+            } else {
+                GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -200,6 +213,7 @@ public class GatedTEMTab extends Grid {
     public void stop() {
         if (measurement != null) {
             measurement.stop();
+            runner.interrupt();
         }
     }
 
