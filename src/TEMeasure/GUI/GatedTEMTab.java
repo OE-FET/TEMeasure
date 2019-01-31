@@ -19,9 +19,9 @@ public class GatedTEMTab extends Grid {
     private final SMUConfig coldGateSMU;
     private final SMUConfig tvSMU;
     private final TCConfig  stageTC;
-    private final Fields    gateParams   = new Fields("Gate Parameters");
-    private final Fields    heaterParams = new Fields("Heater Parameters");
-    private final Fields    otherParams  = new Fields("Other Parameters");
+    private final Fields    gateParams   = new Fields("Gate");
+    private final Fields    heaterParams = new Fields("Heater");
+    private final Fields    otherParams  = new Fields("Other");
 
     private final Field<Double>  gateStart;
     private final Field<Double>  gateStop;
@@ -52,7 +52,7 @@ public class GatedTEMTab extends Grid {
         this.tvSMU = tvSMU;
         this.stageTC = stageTC;
 
-        setNumColumns(3);
+        setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up gate parameters panel
@@ -61,7 +61,6 @@ public class GatedTEMTab extends Grid {
         gateSteps = gateParams.addIntegerField("No. Steps");
         gateParams.addSeparator();
         gateTime = gateParams.addDoubleField("Hold Time [s]");
-        add(gateParams);
 
         // Set-up heater parameters panel
         heaterStart = heaterParams.addDoubleField("Start Heater [V]");
@@ -69,17 +68,17 @@ public class GatedTEMTab extends Grid {
         heaterSteps = heaterParams.addIntegerField("No. Steps");
         heaterParams.addSeparator();
         heaterTime = heaterParams.addDoubleField("Hold Time [s]");
-        add(heaterParams);
 
         // Set-up other parameters panel
         intTime = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
-        add(otherParams);
 
-        add(heaterPlot);
-        add(gatePlot);
-        add(thermalPlot);
-        add(tpPlot);
+        Grid topGrid = new Grid("Parameters", gateParams, heaterParams, otherParams);
+        Grid bottomGrid = new Grid("Results", heaterPlot, gatePlot, thermalPlot, tpPlot);
+        bottomGrid.setNumColumns(2);
+
+        add(topGrid);
+        add(bottomGrid);
 
         heaterPlot.showLegend(false);
         gatePlot.showLegend(false);
@@ -160,7 +159,7 @@ public class GatedTEMTab extends Grid {
             heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
 
             gatePlot.clear();
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CYAN);
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CORNFLOWERBLUE);
 
             thermalPlot.clear();
             thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
@@ -169,6 +168,8 @@ public class GatedTEMTab extends Grid {
             tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
 
             measurement.performMeasurement();
+
+            GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
 
         } catch (Exception e) {
             e.printStackTrace();
