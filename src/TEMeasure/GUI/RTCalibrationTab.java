@@ -18,9 +18,9 @@ public class RTCalibrationTab extends Grid {
     private final SMUConfig heaterSMU;
     private final SMUConfig rtSMU;
     private final TCConfig  stageTC;
-    private final Fields    heaterParams = new Fields("Heater Parameters");
-    private final Fields    rtParams     = new Fields("RT Parameters");
-    private final Fields    otherParams  = new Fields("Other Parameters");
+    private final Fields    heaterParams = new Fields("Heater");
+    private final Fields    rtParams     = new Fields("RT");
+    private final Fields    otherParams  = new Fields("Other");
 
     private final Field<Double>  rtStart;
     private final Field<Double>  rtStop;
@@ -32,6 +32,7 @@ public class RTCalibrationTab extends Grid {
     private final Field<Integer> heaterSteps;
     private final Field<Double>  heaterTime;
 
+    private final Field<Integer> nSweeps;
     private final Field<Double> intTime;
     private final Field<String> outputFile;
 
@@ -48,7 +49,7 @@ public class RTCalibrationTab extends Grid {
         this.rtSMU = rtSMU;
         this.stageTC = stageTC;
 
-        setNumColumns(3);
+        setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up heater parameters panel
@@ -57,25 +58,23 @@ public class RTCalibrationTab extends Grid {
         heaterSteps = heaterParams.addIntegerField("No. Steps");
         heaterParams.addSeparator();
         heaterTime = heaterParams.addDoubleField("Hold Time [s]");
-        add(heaterParams);
-
         // Set-up heater parameters panel
         rtStart = rtParams.addDoubleField("Start Current [uA]");
         rtStop = rtParams.addDoubleField("Stop Current [uA]");
         rtSteps = rtParams.addIntegerField("No. Steps");
         rtParams.addSeparator();
         rtTime = rtParams.addDoubleField("Hold Time [s]");
-        add(rtParams);
 
         // Set-up other parameters panel
+        nSweeps = otherParams.addIntegerField("No. Sweeps");
         intTime = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
-        add(otherParams);
 
+        Grid topGrid = new Grid("Parameters", heaterParams, rtParams, otherParams);
+        Grid bottomGrid = new Grid("Results", heaterVPlot, heaterPPlot, rtPlot);
 
-        add(heaterVPlot);
-        add(heaterPPlot);
-        add(rtPlot);
+        add(topGrid);
+        add(bottomGrid);
 
         heaterVPlot.showLegend(false);
         heaterPPlot.showLegend(false);
@@ -101,6 +100,7 @@ public class RTCalibrationTab extends Grid {
         rtTime.set(0.1);
 
         intTime.set(10.0 / 50.0);
+        nSweeps.set(3);
 
     }
 
@@ -137,7 +137,8 @@ public class RTCalibrationTab extends Grid {
 
             measurement.configureRT(rtStart.get() * 1e-6, rtStop.get() * 1e-6, rtSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
-                       .configureTiming(heaterTime.get(), rtTime.get(), intTime.get());
+                       .configureTiming(heaterTime.get(), rtTime.get(), intTime.get())
+                       .configureSweeps(nSweeps.get());
 
             ResultTable results = measurement.newResults(outputFile.get());
 
@@ -148,9 +149,12 @@ public class RTCalibrationTab extends Grid {
             heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
 
             rtPlot.clear();
-            rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CYAN);
+            rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
 
             measurement.performMeasurement();
+
+            GUI.infoAlert("Complete", "Measurement Complete", "The measurement completed without error.");
+
         } catch (Exception e) {
             e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage(), 600);

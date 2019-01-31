@@ -250,6 +250,7 @@ public class GatedTEM {
 
                 // Next iteration will be cold-gate config
                 config = 1;
+                gate.turnOff();
             }
 
         } finally {
