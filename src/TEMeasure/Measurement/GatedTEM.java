@@ -2,7 +2,7 @@ package TEMeasure.Measurement;
 
 import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
-import JISA.Devices.TController;
+import JISA.Devices.TC;
 import JISA.Experiment.ResultList;
 import JISA.Experiment.ResultStream;
 import JISA.Experiment.ResultTable;
@@ -18,7 +18,7 @@ public class GatedTEM {
     private SMU         hotGate;
     private SMU         coldGate;
     private SMU         heater;
-    private TController stage;
+    private TC stage;
 
     private double gateStart = -40;
     private double gateStop  = 0;
@@ -50,7 +50,7 @@ public class GatedTEM {
     public static final int COL_GATE_SET_VOLTAGE  = 8;
     public static final int COL_GATE_CONFIG       = 9;
 
-    public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TController stageController) {
+    public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TC stageController) {
         thermoVoltage = thermoVoltageSMU;
         hotGate = hotGateSMU;
         coldGate = coldGateSMU;

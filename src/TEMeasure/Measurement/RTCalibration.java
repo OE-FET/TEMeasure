@@ -2,7 +2,7 @@ package TEMeasure.Measurement;
 
 import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
-import JISA.Devices.TController;
+import JISA.Devices.TC;
 import JISA.Experiment.ResultList;
 import JISA.Experiment.ResultStream;
 import JISA.Experiment.ResultTable;
@@ -17,7 +17,7 @@ public class RTCalibration {
 
     private SMU         heater;
     private SMU         rt;
-    private TController stageTC;
+    private TC stageTC;
 
     private int sweeps;
 
@@ -51,10 +51,10 @@ public class RTCalibration {
     public static final int COL_RT_CURRENT        = 7;
     public static final int COL_RT_RESISTANCE     = 8;
 
-    public RTCalibration(SMU heaterSMU, SMU rtSMU, TController stageTController) {
+    public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC) {
         heater = heaterSMU;
         rt = rtSMU;
-        stageTC = stageTController;
+        stageTC = stageTC;
     }
 
     /**

@@ -10,8 +10,8 @@ public class MainWindow extends Tabs {
 
     private ConfigStore      configStore      = new ConfigStore("TEMeasure");
     private ConnectionTab    connectionTab    = new ConnectionTab(configStore);
-    private SMUConfigTab     smuConfigTab     = new SMUConfigTab(connectionTab);
-    private TCConfigTab      tcConfigTab      = new TCConfigTab(connectionTab);
+    private SMUConfigTab     smuConfigTab     = new SMUConfigTab(connectionTab, configStore);
+    private TCConfigTab      tcConfigTab      = new TCConfigTab(connectionTab, configStore);
     private GatedTEMTab      gatedTEMTab      = new GatedTEMTab(smuConfigTab.heaterSMU, smuConfigTab.hotGateSMU, smuConfigTab.coldGateSMU, smuConfigTab.tvSMU, tcConfigTab.stage);
     private RTCalibrationTab rtCalibrationTab = new RTCalibrationTab(smuConfigTab.heaterSMU, smuConfigTab.rtSMU, tcConfigTab.stage);
 

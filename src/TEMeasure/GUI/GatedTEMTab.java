@@ -3,7 +3,7 @@ package TEMeasure.GUI;
 import JISA.Control.Field;
 import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
-import JISA.Devices.TController;
+import JISA.Devices.TC;
 import JISA.Experiment.ResultTable;
 import JISA.GUI.*;
 import TEMeasure.Measurement.GatedTEM;
@@ -116,7 +116,7 @@ public class GatedTEMTab extends Grid {
             SMU                hotGateVoltage  = hotGateSMU.getSMU();
             SMU                coldGateVoltage = coldGateSMU.getSMU();
             SMU                heaterVoltage   = heaterSMU.getSMU();
-            TController        stageTemp       = stageTC.getTController();
+            TC                 stageTemp       = stageTC.getTController();
             LinkedList<String> errors          = new LinkedList<>();
 
             if (thermoVoltage == null) {
