@@ -85,7 +85,7 @@ public class GatedTEMTab extends Grid {
         add(new Grid("", table));
 
         heaterPlot.showLegend(false);
-        gatePlot.showLegend(false);
+        gatePlot.showLegend(true);
         thermalPlot.showLegend(false);
 
         addToolbarButton("Start", this::run);
@@ -182,13 +182,16 @@ public class GatedTEMTab extends Grid {
             heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
 
             gatePlot.clear();
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, "Gate", Color.CORNFLOWERBLUE);
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0, "Hot-Gate", Color.ORANGERED);
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
+
 
             thermalPlot.clear();
-            thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.ORANGE);
+            thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
 
             tpPlot.clear();
-            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE);
+            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0);
+            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0);
 
             table.clear();
             table.watchList(results);
