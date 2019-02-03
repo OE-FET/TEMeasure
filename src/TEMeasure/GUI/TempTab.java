@@ -30,9 +30,9 @@ public class TempTab extends Grid {
         Plot tPlot = new Plot("Temperatures", "Time [s]", "Temperature [K]");
         Plot hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
         tPlot.showMarkers(false);
-        tPlot.setMaxRange(3600);
+        tPlot.setXAutoRemove(3600);
         hPlot.showMarkers(false);
-        hPlot.setMaxRange(3600);
+        hPlot.setXAutoRemove(3600);
 
         add(tPlot);
         add(hPlot);
