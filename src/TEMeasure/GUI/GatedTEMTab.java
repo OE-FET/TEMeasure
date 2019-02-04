@@ -158,7 +158,7 @@ public class GatedTEMTab extends Grid {
             }
 
             if (stageTemp == null) {
-                errors.add("Stage T-Controller is not configured.");
+                errors.add("Sample T-Controller is not configured.");
             }
 
             if (outputFile.get().trim().equals("")) {
