@@ -15,20 +15,23 @@ import java.io.IOException;
 
 public class TempTab extends Grid {
 
-    private RTask logger;
+    private RTask       logger;
+    private ResultTable log;
 
-    private TC sample = null;
-    private TC radiation = null;
-    private TC firstStage = null;
-    private TC secondStage = null;
+    private TC   sample      = null;
+    private TC   radiation   = null;
+    private TC   firstStage  = null;
+    private TC   secondStage = null;
+    private Plot tPlot;
+    private Plot hPlot;
 
     public TempTab(TCConfig s, TCConfig r, TCConfig fs, TCConfig ss) {
 
         super("Temperature Control");
         setNumColumns(1);
 
-        Plot tPlot = new Plot("Temperatures", "Time [s]", "Temperature [K]");
-        Plot hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
+        tPlot = new Plot("Temperatures", "Time [s]", "Temperature [K]");
+        hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
         tPlot.showMarkers(false);
         tPlot.setXAutoRemove(3600);
         hPlot.showMarkers(false);
@@ -37,9 +40,60 @@ public class TempTab extends Grid {
         add(tPlot);
         add(hPlot);
 
+        logger = new RTask(5000, () -> {
+            log.addData(
+                    logger.getSecFromStart(),
+                    sample.getTemperature(),
+                    radiation.getTemperature(),
+                    firstStage.getTemperature(),
+                    secondStage.getTemperature(),
+                    sample.getHeaterPower(),
+                    radiation.getHeaterPower(),
+                    firstStage.getHeaterPower(),
+                    secondStage.getHeaterPower(),
+                    sample.getPValue(),
+                    radiation.getPValue(),
+                    firstStage.getPValue(),
+                    secondStage.getPValue(),
+                    sample.getIValue(),
+                    radiation.getIValue(),
+                    firstStage.getIValue(),
+                    secondStage.getIValue(),
+                    sample.getDValue(),
+                    radiation.getDValue(),
+                    firstStage.getDValue(),
+                    secondStage.getDValue(),
+                    sample.getTargetTemperature(),
+                    radiation.getTargetTemperature(),
+                    firstStage.getTargetTemperature(),
+                    secondStage.getTargetTemperature()
+            );
+        });
+
+
+        addToolbarButton("Start", () -> {
+            connect(s, r, fs, ss);
+            start();
+        });
+
+        addToolbarButton("Stop", () -> logger.stop());
+
+    }
+
+    private void start() {
+
+        if (logger.isRunning()) {
+            return;
+        }
+
+        if (sample == null || radiation == null || firstStage == null || secondStage == null) {
+            GUI.errorAlert("Error", "Cannot start logger", "Temperature controllers not properly configured");
+            return;
+        }
+
+
         String fileName = String.format("TLog-%d.csv", System.currentTimeMillis());
 
-        ResultTable log;
         try {
             log = new ResultStream(fileName,
                     "Time",
@@ -73,6 +127,9 @@ public class TempTab extends Grid {
             return;
         }
 
+        tPlot.fullClear();
+        hPlot.fullClear();
+
         tPlot.watchList(log, 0, 1, "Sample", Color.RED);
         tPlot.watchList(log, 0, 21, "Sample SP", Color.ORANGE);
         tPlot.watchList(log, 0, 2, "Radiation", Color.GOLD);
@@ -87,55 +144,7 @@ public class TempTab extends Grid {
         hPlot.watchList(log, 0, 7, "First Stage", Color.GREEN);
         hPlot.watchList(log, 0, 8, "Second Stage", Color.BLUE);
 
-        logger = new RTask(5000, () -> {
-            log.addData(
-                    logger.getSecFromStart(),
-                    sample.getTemperature(),
-                    radiation.getTemperature(),
-                    firstStage.getTemperature(),
-                    secondStage.getTemperature(),
-                    sample.getHeaterPower(),
-                    radiation.getHeaterPower(),
-                    firstStage.getHeaterPower(),
-                    secondStage.getHeaterPower(),
-                    sample.getPValue(),
-                    radiation.getPValue(),
-                    firstStage.getPValue(),
-                    secondStage.getPValue(),
-                    sample.getIValue(),
-                    radiation.getIValue(),
-                    firstStage.getIValue(),
-                    secondStage.getIValue(),
-                    sample.getDValue(),
-                    radiation.getDValue(),
-                    firstStage.getDValue(),
-                    secondStage.getDValue(),
-                    sample.getTargetTemperature(),
-                    radiation.getTargetTemperature(),
-                    firstStage.getTargetTemperature(),
-                    secondStage.getTargetTemperature()
-            );
-        });
-
-        addToolbarButton("Start", () -> {
-
-            if (logger.isRunning()) {
-                return;
-            }
-
-            connect(s,r,fs,ss);
-
-            if (sample == null || radiation == null || firstStage == null || secondStage == null) {
-                GUI.errorAlert("Error", "Cannot start logger", "Temperature controllers not properly configured");
-                return;
-            }
-
-            log.clear();
-            logger.start();
-
-        });
-
-        addToolbarButton("Stop", () -> logger.stop());
+        logger.start();
 
     }
 
