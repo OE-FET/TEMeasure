@@ -13,12 +13,13 @@ import java.io.IOException;
 
 public class RTCalibration {
 
-    private boolean running = false;
-    private boolean stopped = false;
+    private boolean running   = false;
+    private boolean stopped   = false;
+    private Thread  runThread = Thread.currentThread();
 
-    private SMU         heater;
-    private SMU         rt;
-    private TC stageTC;
+    private SMU heater;
+    private SMU rt;
+    private TC  stageTC;
 
     private int sweeps;
 
@@ -146,89 +147,126 @@ public class RTCalibration {
         return this;
     }
 
+    /**
+     * Performs the measurement using the parameters configured using the configure...() methods.
+     *
+     * @throws IOException     Upon communications error
+     * @throws DeviceException Upon instrument compatibility error
+     */
     public void performMeasurement() throws IOException, DeviceException {
 
+        // Reset flags
         stopped = false;
+        running = true;
+
+        // Store current thread so we can interrupt if the user presses "Stop"
+        runThread = Thread.currentThread();
 
         try {
 
-            running = true;
+            // Store measurement number, so we can count
             currentStep = 0;
             numSteps = sweeps * heaterSteps * rtSteps;
 
+            // Create arrays of voltages and currents that we will use
             double[] heaters  = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
             double[] currents = Util.makeLinearArray(rtStart, rtStop, rtSteps);
 
+            // Make sure everything's off first
             heater.turnOff();
             rt.turnOff();
 
+            // Configure heater SMU
             heater.setSource(SMU.Source.VOLTAGE);
             heater.useAutoRanges();
             heater.useFourProbe(false);
 
+            // Configure RT SMU
             rt.setSource(SMU.Source.CURRENT);
             rt.useAutoRanges();
             rt.useFourProbe(true);
             rt.setIntegrationTime(intTime);
 
+            // Perform n sweeps in total
             mainLoop:
             for (int sweep = 0; sweep < sweeps; sweep++) {
 
+                // Initial value
                 heater.setVoltage(heaterStart);
                 heater.turnOn();
 
                 for (double H : heaters) {
 
+                    // Set heater voltage and wait heater hold time
                     heater.setVoltage(H);
                     Util.sleep(heaterDelay);
 
+                    // If run flag has changed to false, it means we want to stop the measurement, so break out
+                    if (!running) {
+                        break mainLoop;
+                    }
+
+                    // Initial value for rt
                     rt.setCurrent(rtStart);
                     rt.turnOn();
                     for (double I : currents) {
 
+                        // Set current and wait for current hold time
                         rt.setCurrent(I);
                         Util.sleep(delTime);
-
-                        double heaterVoltage = heater.getVoltage();
-                        double heaterCurrent = heater.getCurrent();
-                        double heaterPower   = heaterVoltage * heaterCurrent;
-
-                        double rtVoltage    = rt.getVoltage();
-                        double rtCurrent    = rt.getCurrent();
-                        double rtResistance = rtCurrent / rtVoltage;
-
-                        results.addData(
-                                (double) currentStep,
-                                (double) sweep,
-                                stageTC.getTemperature(),
-                                heaterVoltage,
-                                heaterCurrent,
-                                heaterPower,
-                                rtVoltage,
-                                rtCurrent,
-                                rtResistance
-                        );
-
-
-                        currentStep++;
 
                         if (!running) {
                             break mainLoop;
                         }
 
+                        // Calculate heater power
+                        double heaterVoltage = heater.getVoltage();
+                        double heaterCurrent = heater.getCurrent();
+                        double heaterPower   = heaterVoltage * heaterCurrent;
+
+                        // Calculate RT resistance (assuming 0 y-intercept of V vs I)
+                        double rtVoltage    = rt.getVoltage();
+                        double rtCurrent    = rt.getCurrent();
+                        double rtResistance = rtCurrent / rtVoltage;
+
+                        // Add data point to results
+                        results.addData(
+                                (double) currentStep,      // Measurement number
+                                (double) sweep,            // Sweep number
+                                stageTC.getTemperature(),  // Sample temperature
+                                heaterVoltage,             // Heater voltage
+                                heaterCurrent,             // Heater current
+                                heaterPower,               // Heater power
+                                rtVoltage,                 // RT voltage
+                                rtCurrent,                 // RT current
+                                rtResistance               // RT resistance
+                        );
+
+                        // Increment measurement number by 1
+                        currentStep++;
+
                     }
+
+                    // Turn off current through RT
                     rt.turnOff();
 
                 }
 
+                // Turn off heater and wait for heater hold time
                 heater.turnOff();
                 Util.sleep(heaterDelay);
 
+                if (!running) {
+                    break mainLoop;
+                }
+
             }
 
-        } finally {
+        } finally { // This will always run regardless of whether an exception is thrown or not
 
             running = false;
+
+            // Try to turn everything off
             try {
                 heater.turnOff();
                 rt.turnOff();
@@ -240,21 +278,42 @@ public class RTCalibration {
 
     }
 
+    /**
+     * Returns the current percentage completion of the on-going measurement.
+     *
+     * @return Perentage completion
+     */
     public double getPercentageComplete() {
         return 100D * ((double) currentStep) / ((double) numSteps);
     }
 
+    /**
+     * Returns whether this measurement is currently running.
+     *
+     * @return Running?
+     */
     public boolean isRunning() {
         return running;
     }
 
-    public void stop() {
-        running = false;
-        stopped = true;
-    }
-
+    /**
+     * Returns whether this measurement was stopped before completion on its last run.
+     *
+     * @return Stopped early?
+     */
     public boolean wasStopped() {
         return stopped;
+    }
+
+    /**
+     * Stops the currently running measurement.
+     */
+    public void stop() {
+        if (isRunning()) {
+            running = false;
+            stopped = true;
+            runThread.interrupt();
+        }
     }
 
 }

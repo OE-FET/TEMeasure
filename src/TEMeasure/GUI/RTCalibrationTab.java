@@ -40,7 +40,6 @@ public class RTCalibrationTab extends Grid {
     private final Plot  heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
     private final Plot  rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
     private final Table table       = new Table("Table of Results");
-    private Thread runner;
 
     private RTCalibration measurement = null;
 
@@ -127,8 +126,6 @@ public class RTCalibrationTab extends Grid {
 
         try {
 
-            runner = Thread.currentThread();
-
             disableInputs(true);
 
             SMU                heaterVoltage = heaterSMU.getSMU();
@@ -198,7 +195,6 @@ public class RTCalibrationTab extends Grid {
     public void stop() {
         if (measurement != null) {
             measurement.stop();
-            runner.interrupt();
         }
     }
 

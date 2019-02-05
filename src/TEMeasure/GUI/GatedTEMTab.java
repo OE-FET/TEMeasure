@@ -12,6 +12,7 @@ import javafx.scene.paint.Color;
 import java.io.IOException;
 import java.util.LinkedList;
 
+@SuppressWarnings("Duplicates")
 public class GatedTEMTab extends Grid {
 
     private final SMUConfig heaterSMU;
@@ -41,8 +42,6 @@ public class GatedTEMTab extends Grid {
     private final Plot  thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [V]");
     private final Plot  tpPlot      = new Plot("TV vs Power", "Heater Power [W]", "Thermo-Voltage [V]");
     private final Table table      = new Table("Table of Results");
-
-    private Thread runner;
 
     private GatedTEM measurement = null;
 
@@ -130,8 +129,6 @@ public class GatedTEMTab extends Grid {
 
         try {
 
-            runner = Thread.currentThread();
-
             disableInputs(true);
 
             SMU                thermoVoltage   = tvSMU.getSMU();
@@ -216,7 +213,6 @@ public class GatedTEMTab extends Grid {
     public void stop() {
         if (measurement != null) {
             measurement.stop();
-            runner.interrupt();
         }
     }
 

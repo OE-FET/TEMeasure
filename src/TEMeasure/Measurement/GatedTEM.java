@@ -12,8 +12,9 @@ import java.io.IOException;
 
 public class GatedTEM {
 
-    private boolean running = false;
-    private boolean stopped = false;
+    private boolean running   = false;
+    private boolean stopped   = false;
+    private Thread  runThread = Thread.currentThread();
 
     private SMU thermoVoltage;
     private SMU hotGate;
@@ -21,35 +22,36 @@ public class GatedTEM {
     private SMU heater;
     private TC  stage;
 
-    private double gateStart = -40;
-    private double gateStop  = 0;
-    private int    gateSteps = 9;
+    // Parameters, with default values
+    private double gateStart   = -40;         // -40 Volts
+    private double gateStop    = 0;           //   0 Volts
+    private int    gateSteps   = 9;           //   9 Steps
+    private double heaterStart = 0;           //   0 Volts
+    private double heaterStop  = 5;           //   5 Volts
+    private int    heaterSteps = 6;           //   6 Steps
+    private int    gateDelay   = 20000;       //  20 seconds
+    private int    heaterDelay = 10000;       //  10 seconds
+    private double intTime     = 10.0 / 50.0; //  10 power-line cycles
 
-    private double heaterStart = 0;
-    private double heaterStop  = 5;
-    private int    heaterSteps = 6;
+    private int         currentStep = 0;
+    private int         numSteps    = gateSteps * heaterSteps;
+    private ResultTable results;
 
-    private int    gateDelay   = 20000;       // 20 seconds
-    private int    heaterDelay = 10000;       // 10 seconds
-    private double intTime     = 10.0 / 50.0; // 10 power-line cycles
+    // Names and units for columns in our results
+    public static final String[] COLUMNS = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
+    public static final String[] UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~"};
 
-    private int currentStep = 0;
-    private int numSteps    = gateSteps * heaterSteps;
-
-    private             ResultTable results;
-    public static final String[]    COLUMNS = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
-    public static final String[]    UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~"};
-
-    public static final int COL_NUMBER            = 0;
-    public static final int COL_STAGE_TEMPERATURE = 1;
-    public static final int COL_GATE_VOLTAGE      = 2;
-    public static final int COL_GATE_CURRENT      = 3;
-    public static final int COL_HEATER_VOLTAGE    = 4;
-    public static final int COL_HEATER_CURRENT    = 5;
-    public static final int COL_HEATER_POWER      = 6;
-    public static final int COL_THERMO_VOLTAGE    = 7;
-    public static final int COL_GATE_SET_VOLTAGE  = 8;
-    public static final int COL_GATE_CONFIG       = 9;
+    // Constants to define what each column in our results is meant to be
+    public static final int COL_NUMBER             = 0;  // Measurement Number
+    public static final int COL_SAMPLE_TEMPERATURE = 1;  // Sample Temperature
+    public static final int COL_GATE_VOLTAGE       = 2;  // Gate Voltage
+    public static final int COL_GATE_CURRENT       = 3;  // Gate Leakage Current
+    public static final int COL_HEATER_VOLTAGE     = 4;  // Heater Voltage
+    public static final int COL_HEATER_CURRENT     = 5;  // Heater Current
+    public static final int COL_HEATER_POWER       = 6;  // Heater Power
+    public static final int COL_THERMO_VOLTAGE     = 7;  // Thermo-Voltage
+    public static final int COL_GATE_SET_VOLTAGE   = 8;  // Gate Voltage Set-Point
+    public static final int COL_GATE_CONFIG        = 9;  // Gate Configuration (0=hot-gate, 1=cold-gate)
 
     public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TC stageController) {
         thermoVoltage = thermoVoltageSMU;
@@ -136,8 +138,8 @@ public class GatedTEM {
      * @return Self-reference, for chaining
      */
     public GatedTEM configureTiming(double gateHold, double heaterHold, double integrationTime) {
-        gateDelay = (int) (gateHold * 1000); // Convert to milliseconds
-        heaterDelay = (int) (heaterHold * 1000); // Convert to milliseconds
+        gateDelay = (int) (gateHold * 1000);        // Convert to milliseconds
+        heaterDelay = (int) (heaterHold * 1000);    // Convert to milliseconds
         intTime = integrationTime;
         return this;
     }
@@ -150,13 +152,21 @@ public class GatedTEM {
      */
     public void performMeasurement() throws IOException, DeviceException {
 
+        // Reset the stopped flag
         stopped = false;
+
+        // We are now running
+        running = true;
+
+        // Hold on to which thread is currently running this measurement so we can interrupt it
+        runThread = Thread.currentThread();
 
         try {
 
-            running = true;
-
+            // This variable is used to count which measurement number we are currently on
             currentStep = 0;
+
+            // Total number of measurements that will be taken
             numSteps = gateSteps * heaterSteps;
 
             // Make sure outputs are disabled to begin with
@@ -175,91 +185,113 @@ public class GatedTEM {
             thermoVoltage.useAutoRanges();
             thermoVoltage.setCurrent(0.0);
 
+            // Configure gate SMUs
             hotGate.useAutoRanges();
             hotGate.setVoltage(gateStart);
             coldGate.useAutoRanges();
             coldGate.setVoltage(gateStart);
 
+            // Configure heater SMU
             heater.useAutoRanges();
             heater.setVoltage(heaterStart);
 
+            // Create arrays of voltage values to use for gate and heater voltages
             double[] gates   = Util.makeLinearArray(gateStart, gateStop, gateSteps);
             double[] heaters = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
 
+            // This number indicates whether we're using hot-gate (0) or cold-gate (1) in our data
             double config = 0;
+
+            // Loop over each configuration
             mainLoop:
             for (SMU gate : new SMU[]{hotGate, coldGate}) {
 
+                // Turn on this gate and the thermo-voltage SMU
                 thermoVoltage.turnOn();
                 gate.turnOn();
 
+                // If the running flag has been flipped back to false, then stop running
                 if (!running) {
                     break mainLoop;
                 }
 
+                // Loop over each gate value we want to use
                 for (double G : gates) {
 
+                    // Set the gate voltage and wait our gate hold time
                     gate.setVoltage(G);
                     Util.sleep(gateDelay);
-
-                    heater.setVoltage(heaterStart);
-                    heater.turnOn();
 
                     if (!running) {
                         break mainLoop;
                     }
 
+                    // Initial values
+                    heater.setVoltage(heaterStart);
+                    heater.turnOn();
+
                     for (double H : heaters) {
 
+                        // Set the heater and wait our heater hold time
                         heater.setVoltage(H);
                         Util.sleep(heaterDelay);
-
-                        double heaterVoltage = heater.getVoltage();
-                        double heaterCurrent = heater.getCurrent();
-                        double heaterPower = heaterVoltage * heaterCurrent;
-
-                        results.addData(
-                                (double) currentStep,
-                                stage.getTemperature(),
-                                gate.getVoltage(),
-                                gate.getCurrent(),
-                                heaterVoltage,
-                                heaterCurrent,
-                                heaterPower,
-                                thermoVoltage.getVoltage(),
-                                G,
-                                config
-                        );
-
-                        currentStep++;
 
                         if (!running) {
                             break mainLoop;
                         }
 
+                        // Get the heater current and voltage to calculate power
+                        double heaterVoltage = heater.getVoltage();
+                        double heaterCurrent = heater.getCurrent();
+                        double heaterPower   = heaterVoltage * heaterCurrent;
+
+                        // Add data-point to our results
+                        results.addData(
+                                (double) currentStep,        // Measurement number
+                                stage.getTemperature(),      // Sample temperature
+                                gate.getVoltage(),           // Gate voltage
+                                gate.getCurrent(),           // Gate leakage current
+                                heaterVoltage,               // Heater voltage
+                                heaterCurrent,               // Heater current
+                                heaterPower,                 // Heater power
+                                thermoVoltage.getVoltage(),  // Thermo-voltage
+                                G,                           // Gate set-point
+                                config                       // Hot-Gate (0) or Cold-Gate (1) ?
+                        );
+
+                        currentStep++;
+
                     }
 
+                    // Turn the heater off and wait our heater hold time
                     heater.turnOff();
                     Util.sleep(heaterDelay);
 
+                    if (!running) {
+                        break mainLoop;
+                    }
+
                 }
 
-                // Reverse gate voltages so that we go down in gate now
-                for(int i=0; i < gates.length/2; i++){
+                // Reverse gate voltages for next iteration of gate loop
+                for (int i = 0; i < gates.length / 2; i++) {
                     double temp = gates[i];
-                    gates[i] = gates[gates.length -i -1];
-                    gates[gates.length -i -1] = temp;
+                    gates[i] = gates[gates.length - i - 1];
+                    gates[gates.length - i - 1] = temp;
                 }
 
                 // Next iteration will be cold-gate config
                 config = 1;
+
+                // Turn off this gate before using the next
                 gate.turnOff();
             }
 
-        } finally {
+        } finally { // This will always run even if the code inside the try{...} throws an exception
 
             running = false;
 
+            // Make sure we try to turn everything off
             try {
                 heater.turnOff();
                 hotGate.turnOff();
@@ -272,21 +304,42 @@ public class GatedTEM {
 
     }
 
+    /**
+     * Returns the current percentage completion of the on-going measurement.
+     *
+     * @return Perentage completion
+     */
     public double getPercentageComplete() {
         return 100D * ((double) currentStep) / ((double) numSteps);
     }
 
+    /**
+     * Returns whether this measurement is currently running.
+     *
+     * @return Running?
+     */
     public boolean isRunning() {
         return running;
     }
 
+    /**
+     * Returns whether this measurement was stopped before completion on its last run.
+     *
+     * @return Stopped early?
+     */
     public boolean wasStopped() {
         return stopped;
     }
 
+    /**
+     * Stops the currently running measurement.
+     */
     public void stop() {
-        running = false;
-        stopped = true;
+        if (isRunning()) {
+            running = false;
+            stopped = true;
+            runThread.interrupt();
+        }
     }
 
 }
