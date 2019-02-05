@@ -1,14 +1,12 @@
 package TEMeasure.GUI;
 
+import JISA.Control.Field;
 import JISA.Control.RTask;
 import JISA.Devices.DeviceException;
 import JISA.Devices.TC;
 import JISA.Experiment.ResultStream;
 import JISA.Experiment.ResultTable;
-import JISA.GUI.GUI;
-import JISA.GUI.Grid;
-import JISA.GUI.Plot;
-import JISA.GUI.TCConfig;
+import JISA.GUI.*;
 import javafx.scene.paint.Color;
 
 import java.io.IOException;
@@ -41,6 +39,64 @@ public class TempTab extends Grid {
         hPlot.showToolbar(true);
         hPlot.setAutoMode();
 
+        Fields         control  = new Fields("Control");
+        Field<Double>  setPoint = control.addDoubleField("Set-Point [K]");
+        Field<Integer> range    = control.addChoice("Heater Range", "Off", "Low", "Medium", "High");
+
+        TC t = s.getTController();
+
+        if (t != null) {
+            try {
+                setPoint.set(t.getTemperature());
+                double ra = t.getHeaterRange();
+
+                if (ra == 0) {
+                    range.set(0);
+                } else {
+                    range.set((int) Math.floor(Math.log10(ra)) + 1);
+                }
+            } catch (Exception ignored) {}
+        } else {
+            setPoint.set(297.0);
+            range.set(0);
+        }
+
+        control.addButton("Apply", () -> {
+
+            TC tc = s.getTController();
+
+            if (tc == null) {
+                GUI.errorAlert("Error", "T-Controller Not Configured", "The temperature controller is not properly configured.");
+                return;
+            }
+
+            tc.setTargetTemperature(setPoint.get());
+
+            switch (range.get()) {
+
+                case 0:
+                    tc.setHeaterRange(0.0);
+                    break;
+
+                case 1:
+                    tc.setHeaterRange(1.0);
+                    break;
+
+                case 2:
+                    tc.setHeaterRange(10.0);
+                    break;
+
+                case 3:
+                    tc.setHeaterRange(100.0);
+                    break;
+
+            }
+
+            tc.useAutoHeater();
+
+        });
+
+        add(control);
         add(tPlot);
         add(hPlot);
 
