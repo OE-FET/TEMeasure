@@ -37,8 +37,8 @@ public class GatedTEM {
     private int numSteps    = gateSteps * heaterSteps;
 
     private             ResultTable results;
-    public static final String[]    COLUMNS = {"No.", "Stage Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
-    public static final String[]    UNITS   = {"~", "K", "V", "A", "V", "A", "uW", "uV", "V", "~"};
+    public static final String[]    COLUMNS = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
+    public static final String[]    UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~"};
 
     public static final int COL_NUMBER            = 0;
     public static final int COL_STAGE_TEMPERATURE = 1;
@@ -225,8 +225,8 @@ public class GatedTEM {
                                 gate.getCurrent(),
                                 heaterVoltage,
                                 heaterCurrent,
-                                heaterPower / 1e-6,
-                                thermoVoltage.getVoltage() / 1e-6,
+                                heaterPower,
+                                thermoVoltage.getVoltage(),
                                 G,
                                 config
                         );

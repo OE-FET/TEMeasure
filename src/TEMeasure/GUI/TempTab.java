@@ -34,8 +34,12 @@ public class TempTab extends Grid {
         hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
         tPlot.showMarkers(false);
         tPlot.setXAutoRemove(3600);
+        tPlot.showToolbar(true);
+        tPlot.setAutoMode();
         hPlot.showMarkers(false);
         hPlot.setXAutoRemove(3600);
+        hPlot.showToolbar(true);
+        hPlot.setAutoMode();
 
         add(tPlot);
         add(hPlot);
@@ -149,15 +153,10 @@ public class TempTab extends Grid {
     }
 
     private void connect(TCConfig s, TCConfig r, TCConfig fs, TCConfig ss) {
-        try {
-            sample = s.getTController();
-            radiation = r.getTController();
-            firstStage = fs.getTController();
-            secondStage = ss.getTController();
-        } catch (IOException | DeviceException e) {
-            e.printStackTrace();
-            return;
-        }
+        sample = s.getTController();
+        radiation = r.getTController();
+        firstStage = fs.getTController();
+        secondStage = ss.getTController();
     }
 
 }

@@ -166,13 +166,13 @@ public class RTCalibrationTab extends Grid {
 
             ResultTable results = measurement.newResults(outputFile.get());
 
-            heaterVPlot.clear();
+            heaterVPlot.fullClear();
             heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
 
-            heaterPPlot.clear();
+            heaterPPlot.fullClear();
             heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
 
-            rtPlot.clear();
+            rtPlot.fullClear();
             rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
 
             table.clear();

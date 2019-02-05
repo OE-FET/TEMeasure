@@ -36,10 +36,10 @@ public class GatedTEMTab extends Grid {
     private final Field<Double> intTime;
     private final Field<String> outputFile;
 
-    private final Plot  heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [uW]");
+    private final Plot  heaterPlot  = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
     private final Plot  gatePlot    = new Plot("Gate Voltage", "Measurement No.", "Gate Voltage [V]");
-    private final Plot  thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [uV]");
-    private final Plot  tpPlot      = new Plot("TV vs Power", "Heater Power [uW]", "Thermo-Voltage [uV]");
+    private final Plot  thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [V]");
+    private final Plot  tpPlot      = new Plot("TV vs Power", "Heater Power [W]", "Thermo-Voltage [V]");
     private final Table table      = new Table("Table of Results");
 
     private Thread runner;
@@ -178,18 +178,18 @@ public class GatedTEMTab extends Grid {
 
             ResultTable results = measurement.newResults(outputFile.get());
 
-            heaterPlot.clear();
+            heaterPlot.fullClear();
             heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
 
-            gatePlot.clear();
+            gatePlot.fullClear();
             gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0, "Hot-Gate", Color.ORANGERED);
             gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
 
 
-            thermalPlot.clear();
+            thermalPlot.fullClear();
             thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
 
-            tpPlot.clear();
+            tpPlot.fullClear();
             tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0);
             tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0);
 

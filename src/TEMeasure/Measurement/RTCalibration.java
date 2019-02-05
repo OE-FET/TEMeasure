@@ -39,7 +39,7 @@ public class RTCalibration {
 
     private ResultTable results;
 
-    public static final String[] COLUMNS = {"No.", "Sweep No.", "Stage Temperature", "Heater Voltage", "Heater Current", "Heater Power", "RT Voltage", "RT Current", "RT Resistance"};
+    public static final String[] COLUMNS = {"No.", "Sweep No.", "Sample Temperature", "Heater Voltage", "Heater Current", "Heater Power", "RT Voltage", "RT Current", "RT Resistance"};
     public static final String[] UNITS   = {"~", "~", "K", "V", "A", "W", "V", "A", "Ohms"};
 
     public static final int COL_NUMBER            = 0;
