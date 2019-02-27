@@ -2,6 +2,7 @@ package TEMeasure.GUI;
 
 import JISA.Control.Field;
 import JISA.Control.RTask;
+import JISA.Control.SRunnable;
 import JISA.Devices.DeviceException;
 import JISA.Devices.TC;
 import JISA.Experiment.ResultStream;
@@ -28,14 +29,14 @@ public class TempTab extends Grid {
         super("Temperature Control");
         setNumColumns(1);
 
-        tPlot = new Plot("Temperatures", "Time [s]", "Temperature [K]");
-        hPlot = new Plot("Heaters", "Time [s]", "Heater Power [%]");
+        tPlot = new Plot("Temperatures", "Time [min]", "Temperature [K]");
+        hPlot = new Plot("Heaters", "Time [min]", "Heater Power [%]");
         tPlot.showMarkers(false);
-        tPlot.setXAutoRemove(3600);
+        tPlot.setXAutoRemove(60.0); // Remove points from plot after 60 minutes
         tPlot.showToolbar(true);
         tPlot.setAutoMode();
         hPlot.showMarkers(false);
-        hPlot.setXAutoRemove(3600);
+        hPlot.setXAutoRemove(60.0);
         hPlot.showToolbar(true);
         hPlot.setAutoMode();
 
@@ -43,23 +44,30 @@ public class TempTab extends Grid {
         Field<Double>  setPoint = control.addDoubleField("Set-Point [K]");
         Field<Integer> range    = control.addChoice("Heater Range", "Off", "Low", "Medium", "High");
 
-        TC t = s.getTController();
 
-        if (t != null) {
-            try {
-                setPoint.set(t.getTemperature());
-                double ra = t.getHeaterRange();
 
-                if (ra == 0) {
-                    range.set(0);
-                } else {
-                    range.set((int) Math.floor(Math.log10(ra)) + 1);
-                }
-            } catch (Exception ignored) {}
-        } else {
-            setPoint.set(297.0);
-            range.set(0);
-        }
+        ClickHandler refresh = () -> {
+
+            TC t = s.getTController();
+
+            if (t != null) {
+                try {
+                    setPoint.set(t.getTargetTemperature());
+                    double ra = t.getHeaterRange();
+
+                    if (ra == 0) {
+                        range.set(0);
+                    } else {
+                        range.set((int) Math.floor(Math.log10(ra)) + 1);
+                    }
+                } catch (Exception ignored) {}
+            } else {
+                setPoint.set(297.0);
+                range.set(0);
+            }
+        };
+
+        control.addButton("Refresh", refresh);
 
         control.addButton("Apply", () -> {
 
@@ -100,9 +108,9 @@ public class TempTab extends Grid {
         add(tPlot);
         add(hPlot);
 
-        logger = new RTask(5000, () -> {
+        logger = new RTask(2500, () -> {
             log.addData(
-                    logger.getSecFromStart(),
+                    logger.getSecFromStart() / 60.0,
                     sample.getTemperature(),
                     radiation.getTemperature(),
                     firstStage.getTemperature(),
@@ -137,6 +145,12 @@ public class TempTab extends Grid {
         });
 
         addToolbarButton("Stop", () -> logger.stop());
+
+        try {
+            refresh.click();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 

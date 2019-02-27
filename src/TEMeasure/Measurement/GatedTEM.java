@@ -38,8 +38,8 @@ public class GatedTEM {
     private ResultTable results;
 
     // Names and units for columns in our results
-    public static final String[] COLUMNS = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config"};
-    public static final String[] UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~"};
+    public static final String[] COLUMNS = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config", "Thermo-Current"};
+    public static final String[] UNITS   = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~", "A"};
 
     // Constants to define what each column in our results is meant to be
     public static final int COL_NUMBER             = 0;  // Measurement Number
@@ -52,6 +52,7 @@ public class GatedTEM {
     public static final int COL_THERMO_VOLTAGE     = 7;  // Thermo-Voltage
     public static final int COL_GATE_SET_VOLTAGE   = 8;  // Gate Voltage Set-Point
     public static final int COL_GATE_CONFIG        = 9;  // Gate Configuration (0=hot-gate, 1=cold-gate)
+    public static final int COL_THERMO_CURRENT     = 10; // Current between hot and cold contacts
 
     public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TC stageController) {
         thermoVoltage = thermoVoltageSMU;
@@ -184,12 +185,15 @@ public class GatedTEM {
             thermoVoltage.setIntegrationTime(intTime);
             thermoVoltage.useAutoRanges();
             thermoVoltage.setCurrent(0.0);
+            thermoVoltage.setVoltageLimit(200.0);
 
             // Configure gate SMUs
             hotGate.useAutoRanges();
             hotGate.setVoltage(gateStart);
+            hotGate.setOffMode(SMU.OffMode.HIGH_IMPEDANCE);
             coldGate.useAutoRanges();
             coldGate.setVoltage(gateStart);
+            coldGate.setOffMode(SMU.OffMode.HIGH_IMPEDANCE);
 
             // Configure heater SMU
             heater.useAutoRanges();
@@ -201,6 +205,7 @@ public class GatedTEM {
 
             // This number indicates whether we're using hot-gate (0) or cold-gate (1) in our data
             double config = 0;
+            double factor = 1.0;
 
             // Loop over each configuration
             mainLoop:
@@ -219,7 +224,7 @@ public class GatedTEM {
                 for (double G : gates) {
 
                     // Set the gate voltage and wait our gate hold time
-                    gate.setVoltage(G);
+                    gate.setVoltage(factor * G);
                     Util.sleep(gateDelay);
 
                     if (!running) {
@@ -249,14 +254,15 @@ public class GatedTEM {
                         results.addData(
                                 (double) currentStep,        // Measurement number
                                 stage.getTemperature(),      // Sample temperature
-                                gate.getVoltage(),           // Gate voltage
-                                gate.getCurrent(),           // Gate leakage current
+                                gate.getVoltage() * factor,  // Gate voltage
+                                gate.getCurrent() * factor,  // Gate leakage current
                                 heaterVoltage,               // Heater voltage
                                 heaterCurrent,               // Heater current
                                 heaterPower,                 // Heater power
                                 thermoVoltage.getVoltage(),  // Thermo-voltage
                                 G,                           // Gate set-point
-                                config                       // Hot-Gate (0) or Cold-Gate (1) ?
+                                config,                      // Hot-Gate (0) or Cold-Gate (1) ?
+                                thermoVoltage.getCurrent()
                         );
 
                         currentStep++;
@@ -282,6 +288,7 @@ public class GatedTEM {
 
                 // Next iteration will be cold-gate config
                 config = 1;
+                factor = -1;
 
                 // Turn off this gate before using the next
                 gate.turnOff();
