@@ -8,24 +8,22 @@ import JISA.GUI.TCConfig;
 
 public class SMUConfigTab extends Grid {
 
-    public  SMUConfig     heaterSMU;
-    public  SMUConfig     rtSMU;
-    public  SMUConfig     tvSMU;
-    public  SMUConfig     hotGateSMU;
-    public  SMUConfig     coldGateSMU;
-    private ConnectionTab connectionTab;
+    SMUConfig heaterSMU;
+    SMUConfig rtSMU;
+    SMUConfig tvSMU;
+    SMUConfig hotGateSMU;
+    SMUConfig coldGateSMU;
 
-    public SMUConfigTab(ConnectionTab connectionTab, ConfigStore configStore) {
+    public SMUConfigTab(MainWindow mainWindow) {
         super("SMU Config");
         setNumColumns(2);
         setGrowth(true, false);
-        this.connectionTab = connectionTab;
 
-        heaterSMU = new SMUConfig("Heater SMU", "heaterSMU", configStore, connectionTab.smus);
-        rtSMU = new SMUConfig("RT SMU", "rtSMU", configStore, connectionTab.smus);
-        tvSMU = new SMUConfig("Thermo-Voltage SMU", "tvSMU", configStore, connectionTab.smus);
-        hotGateSMU = new SMUConfig("Hot-Gate SMU", "hgSMU", configStore, connectionTab.smus);
-        coldGateSMU = new SMUConfig("Cold-Gate SMU", "cgSMU", configStore, connectionTab.smus);
+        heaterSMU   = new SMUConfig("Heater SMU", "heaterSMU", mainWindow.configStore, mainWindow.connectionTab);
+        rtSMU       = new SMUConfig("RT SMU", "rtSMU", mainWindow.configStore, mainWindow.connectionTab);
+        tvSMU       = new SMUConfig("Thermo-Voltage SMU", "tvSMU", mainWindow.configStore, mainWindow.connectionTab);
+        hotGateSMU  = new SMUConfig("Hot-Gate SMU", "hgSMU", mainWindow.configStore, mainWindow.connectionTab);
+        coldGateSMU = new SMUConfig("Cold-Gate SMU", "cgSMU", mainWindow.configStore, mainWindow.connectionTab);
 
         add(heaterSMU);
         add(rtSMU);

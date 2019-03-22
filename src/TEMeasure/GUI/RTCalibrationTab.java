@@ -1,26 +1,24 @@
 package TEMeasure.GUI;
 
 import JISA.Control.Field;
-import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
 import JISA.Experiment.ResultTable;
 import JISA.GUI.*;
-import TEMeasure.Measurement.GatedTEM;
 import TEMeasure.Measurement.RTCalibration;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
 public class RTCalibrationTab extends Grid {
 
-    private final SMUConfig heaterSMU;
-    private final SMUConfig rtSMU;
-    private final TCConfig  stageTC;
-    private final Fields    heaterParams = new Fields("Heater");
-    private final Fields    rtParams     = new Fields("RT");
-    private final Fields    otherParams  = new Fields("Other");
+    private final SMUConfig  heaterSMU;
+    private final SMUConfig  rtSMU;
+    private final TCConfig   stageTC;
+    private final MainWindow mainWindow;
+    private final Fields     heaterParams = new Fields("Heater");
+    private final Fields     rtParams     = new Fields("RT");
+    private final Fields     otherParams  = new Fields("Other");
 
     private final Field<Double>  rtStart;
     private final Field<Double>  rtStop;
@@ -33,8 +31,8 @@ public class RTCalibrationTab extends Grid {
     private final Field<Double>  heaterTime;
 
     private final Field<Integer> nSweeps;
-    private final Field<Double> intTime;
-    private final Field<String> outputFile;
+    private final Field<Double>  intTime;
+    private final Field<String>  outputFile;
 
     private final Plot  heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
     private final Plot  heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
@@ -43,35 +41,38 @@ public class RTCalibrationTab extends Grid {
 
     private RTCalibration measurement = null;
 
-    public RTCalibrationTab(SMUConfig heaterSMU, SMUConfig rtSMU, TCConfig stageTC) {
+    public RTCalibrationTab(MainWindow mainWindow) {
 
         super("RT Calibration");
-        this.heaterSMU = heaterSMU;
-        this.rtSMU = rtSMU;
-        this.stageTC = stageTC;
+        heaterSMU = mainWindow.smuConfigTab.heaterSMU;
+        rtSMU = mainWindow.smuConfigTab.rtSMU;
+        stageTC = mainWindow.tcConfigTab.stage;
+
+        this.mainWindow = mainWindow;
 
         setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up heater parameters panel
         heaterStart = heaterParams.addDoubleField("Start Heater [V]");
-        heaterStop = heaterParams.addDoubleField("Stop Heater [V]");
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]");
         heaterSteps = heaterParams.addIntegerField("No. Steps");
         heaterParams.addSeparator();
-        heaterTime = heaterParams.addDoubleField("Hold Time [s]");
+        heaterTime  = heaterParams.addDoubleField("Hold Time [s]");
+
         // Set-up heater parameters panel
         rtStart = rtParams.addDoubleField("Start Current [A]");
-        rtStop = rtParams.addDoubleField("Stop Current [A]");
+        rtStop  = rtParams.addDoubleField("Stop Current [A]");
         rtSteps = rtParams.addIntegerField("No. Steps");
         rtParams.addSeparator();
-        rtTime = rtParams.addDoubleField("Hold Time [s]");
+        rtTime  = rtParams.addDoubleField("Hold Time [s]");
 
         // Set-up other parameters panel
-        nSweeps = otherParams.addIntegerField("No. Sweeps");
-        intTime = otherParams.addDoubleField("Integration Time [s]");
+        nSweeps    = otherParams.addIntegerField("No. Sweeps");
+        intTime    = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
 
-        Grid topGrid = new Grid("", heaterParams, rtParams, otherParams);
+        Grid topGrid    = new Grid("", heaterParams, rtParams, otherParams);
         Grid bottomGrid = new Grid("", heaterVPlot, heaterPPlot, rtPlot);
 
         add(topGrid);
@@ -90,19 +91,9 @@ public class RTCalibrationTab extends Grid {
     }
 
     private void disableInputs(boolean disable) {
-
-        rtStart.setDisabled(disable);
-        rtStop.setDisabled(disable);
-        rtSteps.setDisabled(disable);
-        rtTime.setDisabled(disable);
-        heaterStart.setDisabled(disable);
-        heaterStop.setDisabled(disable);
-        heaterSteps.setDisabled(disable);
-        heaterTime.setDisabled(disable);
-        intTime.setDisabled(disable);
-        outputFile.setDisabled(disable);
-        nSweeps.setDisabled(disable);
-
+        heaterParams.setFieldsDisabled(disable);
+        rtParams.setFieldsDisabled(disable);
+        otherParams.setFieldsDisabled(disable);
     }
 
     private void fillDefaults() {
@@ -122,7 +113,12 @@ public class RTCalibrationTab extends Grid {
 
     }
 
-    public void run() {
+    private void run() {
+
+        if (mainWindow.isRunning()) {
+            GUI.errorAlert("Error", "Already Running", "Another measurement is already running!");
+            return;
+        }
 
         try {
 
@@ -163,17 +159,7 @@ public class RTCalibrationTab extends Grid {
 
             ResultTable results = measurement.newResults(outputFile.get());
 
-            heaterVPlot.clear();
-            heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
-
-            heaterPPlot.clear();
-            heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
-
-            rtPlot.clear();
-            rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
-
-            table.clear();
-            table.watchList(results);
+            configurePlots(results);
 
             measurement.performMeasurement();
 
@@ -189,6 +175,22 @@ public class RTCalibrationTab extends Grid {
         } finally {
             disableInputs(false);
         }
+
+    }
+
+    private void configurePlots(ResultTable results) {
+
+        heaterVPlot.clear();
+        heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
+
+        heaterPPlot.clear();
+        heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
+
+        rtPlot.clear();
+        rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
+
+        table.clear();
+        table.watchList(results);
 
     }
 

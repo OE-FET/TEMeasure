@@ -7,13 +7,13 @@ import java.io.IOException;
 
 public class MainWindow extends Tabs {
 
-    private ConfigStore      configStore      = new ConfigStore("TEMeasure");
-    private ConnectionTab    connectionTab    = new ConnectionTab(configStore);
-    private SMUConfigTab     smuConfigTab     = new SMUConfigTab(connectionTab, configStore);
-    private TCConfigTab      tcConfigTab      = new TCConfigTab(connectionTab, configStore);
-    private GatedTEMTab      gatedTEMTab      = new GatedTEMTab(smuConfigTab.heaterSMU, smuConfigTab.hotGateSMU, smuConfigTab.coldGateSMU, smuConfigTab.tvSMU, tcConfigTab.stage);
-    private RTCalibrationTab rtCalibrationTab = new RTCalibrationTab(smuConfigTab.heaterSMU, smuConfigTab.rtSMU, tcConfigTab.stage);
-    private TempTab          tempTab          = new TempTab(tcConfigTab.stage, tcConfigTab.shield, tcConfigTab.fStage, tcConfigTab.sStage);
+    ConfigStore      configStore      = new ConfigStore("TEMeasure");
+    ConnectionTab    connectionTab    = new ConnectionTab(this);
+    SMUConfigTab     smuConfigTab     = new SMUConfigTab(this);
+    TCConfigTab      tcConfigTab      = new TCConfigTab(this);
+    GatedTEMTab      gatedTEMTab      = new GatedTEMTab(this);
+    RTCalibrationTab rtCalibrationTab = new RTCalibrationTab(this);
+    TempTab          tempTab          = new TempTab(this);
 
     public MainWindow() throws IOException {
         super("TEMeasure");
@@ -27,4 +27,9 @@ public class MainWindow extends Tabs {
         add(gatedTEMTab);
         add(rtCalibrationTab);
     }
+
+    public boolean isRunning() {
+        return gatedTEMTab.isRunning() || rtCalibrationTab.isRunning();
+    }
+
 }

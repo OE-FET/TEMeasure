@@ -1,7 +1,6 @@
 package TEMeasure.GUI;
 
 import JISA.Control.Field;
-import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
 import JISA.Experiment.ResultTable;
@@ -9,20 +8,15 @@ import JISA.GUI.*;
 import TEMeasure.Measurement.GatedTEM;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
 @SuppressWarnings("Duplicates")
 public class GatedTEMTab extends Grid {
 
-    private final SMUConfig heaterSMU;
-    private final SMUConfig hotGateSMU;
-    private final SMUConfig coldGateSMU;
-    private final SMUConfig tvSMU;
-    private final TCConfig  stageTC;
-    private final Fields    gateParams   = new Fields("Gate");
-    private final Fields    heaterParams = new Fields("Heater");
-    private final Fields    otherParams  = new Fields("Other");
+    private final MainWindow mainWindow;
+    private final Fields     gateParams   = new Fields("Gate");
+    private final Fields     heaterParams = new Fields("Heater");
+    private final Fields     otherParams  = new Fields("Other");
 
     private final Field<Double>  gateStart;
     private final Field<Double>  gateStop;
@@ -41,43 +35,40 @@ public class GatedTEMTab extends Grid {
     private final Plot  gatePlot    = new Plot("Gate Voltage", "Measurement No.", "Gate Voltage [V]");
     private final Plot  thermalPlot = new Plot("Thermo-Voltage", "Measurement No.", "Thermo-Voltage [V]");
     private final Plot  tpPlot      = new Plot("TV vs Power", "Heater Power [W]", "Thermo-Voltage [V]");
-    private final Table table      = new Table("Table of Results");
+    private final Table table       = new Table("Table of Results");
 
     private GatedTEM measurement = null;
 
-    public GatedTEMTab(SMUConfig heaterSMU, SMUConfig hotGateSMU, SMUConfig coldGateSMU, SMUConfig tvSMU, TCConfig stageTC) {
+    public GatedTEMTab(MainWindow mainWindow) {
 
         super("Gated TE Measurement");
-        this.heaterSMU = heaterSMU;
-        this.hotGateSMU = hotGateSMU;
-        this.coldGateSMU = coldGateSMU;
-        this.tvSMU = tvSMU;
-        this.stageTC = stageTC;
+        this.mainWindow = mainWindow;
 
         setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up gate parameters panel
         gateStart = gateParams.addDoubleField("Start Gate [V]");
-        gateStop = gateParams.addDoubleField("Stop Gate [V]");
+        gateStop  = gateParams.addDoubleField("Stop Gate [V]");
         gateSteps = gateParams.addIntegerField("No. Steps");
         gateParams.addSeparator();
-        gateTime = gateParams.addDoubleField("Hold Time [s]");
+        gateTime  = gateParams.addDoubleField("Hold Time [s]");
 
         // Set-up heater parameters panel
         heaterStart = heaterParams.addDoubleField("Start Heater [V]");
-        heaterStop = heaterParams.addDoubleField("Stop Heater [V]");
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]");
         heaterSteps = heaterParams.addIntegerField("No. Steps");
         heaterParams.addSeparator();
-        heaterTime = heaterParams.addDoubleField("Hold Time [s]");
+        heaterTime  = heaterParams.addDoubleField("Hold Time [s]");
 
         // Set-up other parameters panel
-        intTime = otherParams.addDoubleField("Integration Time [s]");
+        intTime    = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
 
-        Grid topGrid = new Grid("", gateParams, heaterParams, otherParams);
+        Grid topGrid    = new Grid("", gateParams, heaterParams, otherParams);
         Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
-        bottomGrid.setNumColumns(2);;
+        bottomGrid.setNumColumns(2);
+        ;
 
         add(topGrid);
         add(bottomGrid);
@@ -112,32 +103,39 @@ public class GatedTEMTab extends Grid {
 
     private void disableInputs(boolean disable) {
 
-        gateStart.setDisabled(disable);
-        gateStop.setDisabled(disable);
-        gateSteps.setDisabled(disable);
-        gateTime.setDisabled(disable);
-        heaterStart.setDisabled(disable);
-        heaterStop.setDisabled(disable);
-        heaterSteps.setDisabled(disable);
-        heaterTime.setDisabled(disable);
-        intTime.setDisabled(disable);
-        outputFile.setDisabled(disable);
+        gateParams.setFieldsDisabled(disable);
+        heaterParams.setFieldsDisabled(disable);
+        otherParams.setFieldsDisabled(disable);
 
     }
 
-    public void run() throws IOException, DeviceException {
+    /**
+     * Checks if all instruments are present and, if so, runs the measurement
+     */
+    private void run() {
+
+        // Make sure nothing else is running
+        if (mainWindow.isRunning()) {
+            GUI.errorAlert("Error", "Already Running", "Another measurement is already running!");
+            return;
+        }
+
+        ResultTable results = null;
 
         try {
 
+            // Disabled all the text-boxes etc
             disableInputs(true);
 
-            SMU                thermoVoltage   = tvSMU.getSMU();
-            SMU                hotGateVoltage  = hotGateSMU.getSMU();
-            SMU                coldGateVoltage = coldGateSMU.getSMU();
-            SMU                heaterVoltage   = heaterSMU.getSMU();
-            TC                 stageTemp       = stageTC.getTController();
+            // Get the instruments that have been configured on the config tabs
+            SMU                thermoVoltage   = mainWindow.smuConfigTab.tvSMU.getSMU();
+            SMU                hotGateVoltage  = mainWindow.smuConfigTab.hotGateSMU.getSMU();
+            SMU                coldGateVoltage = mainWindow.smuConfigTab.coldGateSMU.getSMU();
+            SMU                heaterVoltage   = mainWindow.smuConfigTab.heaterSMU.getSMU();
+            TC                 stageTemp       = mainWindow.tcConfigTab.stage.getTController();
             LinkedList<String> errors          = new LinkedList<>();
 
+            // Check that everything is present and configured
             if (thermoVoltage == null) {
                 errors.add("Thermo-Voltage SMU is not configured.");
             }
@@ -167,34 +165,23 @@ public class GatedTEMTab extends Grid {
                 return;
             }
 
+            // Create a new measurement object using our instruments
             measurement = new GatedTEM(thermoVoltage, hotGateVoltage, coldGateVoltage, heaterVoltage, stageTemp);
 
+            // Configure experiment parameters using values in fields
             measurement.configureGate(gateStart.get(), gateStop.get(), gateSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
                        .configureTiming(gateTime.get(), heaterTime.get(), intTime.get());
 
-            ResultTable results = measurement.newResults(outputFile.get());
+            // Stream results directly to file
+            results = measurement.newResults(outputFile.get());
 
-            heaterPlot.clear();
-            heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
+            configurePlots(results);
 
-            gatePlot.clear();
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0, "Hot-Gate", Color.ORANGERED);
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
-
-
-            thermalPlot.clear();
-            thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
-
-            tpPlot.clear();
-            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0);
-            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0);
-
-            table.clear();
-            table.watchList(results);
-
+            // Do the actual measurement now that everything's ready
             measurement.performMeasurement();
 
+            // Check whether it finished because "stop" was pressed or it completing fully
             if (measurement.wasStopped()) {
                 GUI.infoAlert("Stopped", "Measurement Stopped", "The measurement was stopped.");
             } else {
@@ -202,11 +189,48 @@ public class GatedTEMTab extends Grid {
             }
 
         } catch (Exception e) {
+
+            // If something went wrong, output to terminal and show error alert.
             e.printStackTrace();
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage());
+
         } finally {
+
+            // If we actually got some results, then finalise the table (closes the file)
+            if (results != null) {
+                results.finalise();
+            }
+
+            // Re-enable all the text boxes
             disableInputs(false);
         }
+
+    }
+
+    /**
+     * Configures the plots on the tab to display the live results of a new measurement
+     *
+     * @param results The results object of the new measurement
+     */
+    private void configurePlots(ResultTable results) {
+
+        heaterPlot.clear();
+        heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
+
+        gatePlot.clear();
+        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0, "Hot-Gate", Color.ORANGERED);
+        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
+
+
+        thermalPlot.clear();
+        thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
+
+        tpPlot.clear();
+        tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0);
+        tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0);
+
+        table.clear();
+        table.watchList(results);
 
     }
 

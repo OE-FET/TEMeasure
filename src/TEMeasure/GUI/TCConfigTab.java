@@ -8,20 +8,20 @@ import JISA.GUI.TCConfig;
 public class TCConfigTab extends Grid {
 
 
-    public TCConfig stage;
-    public TCConfig shield;
-    public TCConfig fStage;
-    public TCConfig sStage;
+    TCConfig stage;
+    TCConfig shield;
+    TCConfig fStage;
+    TCConfig sStage;
 
-    public TCConfigTab(ConnectionTab connectionTab, ConfigStore configStore) {
+    public TCConfigTab(MainWindow mainWindow) {
         super("T-Controller Config");
         setNumColumns(2);
         setGrowth(true, false);
 
-        stage = new TCConfig("Sample", "sTC", configStore, connectionTab.tcs);
-        shield = new TCConfig("Radiation Shield", "rTC", configStore, connectionTab.tcs);
-        fStage = new TCConfig("First Stage", "fsTC", configStore, connectionTab.tcs);
-        sStage = new TCConfig("Second Stage", "ssTC", configStore, connectionTab.tcs);
+        stage = new TCConfig("Sample", "sTC", mainWindow.configStore, mainWindow.connectionTab);
+        shield = new TCConfig("Radiation Shield", "rTC", mainWindow.configStore, mainWindow.connectionTab);
+        fStage = new TCConfig("First Stage", "fsTC", mainWindow.configStore, mainWindow.connectionTab);
+        sStage = new TCConfig("Second Stage", "ssTC", mainWindow.configStore, mainWindow.connectionTab);
 
         add(stage);
         add(shield);

@@ -24,7 +24,7 @@ public class TempTab extends Grid {
     private Plot tPlot;
     private Plot hPlot;
 
-    public TempTab(TCConfig s, TCConfig r, TCConfig fs, TCConfig ss) {
+    public TempTab(MainWindow mainWindow) {
 
         super("Temperature Control");
         setNumColumns(1);
@@ -48,7 +48,7 @@ public class TempTab extends Grid {
 
         ClickHandler refresh = () -> {
 
-            TC t = s.getTController();
+            TC t = mainWindow.tcConfigTab.stage.getTController();
 
             if (t != null) {
                 try {
@@ -71,7 +71,7 @@ public class TempTab extends Grid {
 
         control.addButton("Apply", () -> {
 
-            TC tc = s.getTController();
+            TC tc = mainWindow.tcConfigTab.stage.getTController();
 
             if (tc == null) {
                 GUI.errorAlert("Error", "T-Controller Not Configured", "The temperature controller is not properly configured.");
@@ -140,7 +140,7 @@ public class TempTab extends Grid {
 
 
         addToolbarButton("Start", () -> {
-            connect(s, r, fs, ss);
+            connect( mainWindow.tcConfigTab.stage,  mainWindow.tcConfigTab.shield,  mainWindow.tcConfigTab.fStage,  mainWindow.tcConfigTab.sStage);
             start();
         });
 
