@@ -164,7 +164,7 @@ public class RTCalibrationTab extends Grid {
             measurement.performMeasurement();
 
             if (measurement.wasStopped()) {
-                GUI.infoAlert("Stopped", "Measurement Stopped", "The measurement was stopped.");
+                GUI.warningAlert("Stopped", "Measurement Stopped", "The measurement was stopped before completion.");
             } else {
                 GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
             }

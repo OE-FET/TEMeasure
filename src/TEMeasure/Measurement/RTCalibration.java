@@ -97,7 +97,7 @@ public class RTCalibration extends Measurement {
                     // Calculate RT resistance (assuming 0 y-intercept of V vs I)
                     double rtVoltage    = rt.getVoltage();
                     double rtCurrent    = rt.getCurrent();
-                    double rtResistance = rtCurrent / rtVoltage;
+                    double rtResistance = rtVoltage / rtCurrent;
 
                     // Add data point to results
                     results.addData(

@@ -183,7 +183,7 @@ public class GatedTEMTab extends Grid {
 
             // Check whether it finished because "stop" was pressed or it completing fully
             if (measurement.wasStopped()) {
-                GUI.infoAlert("Stopped", "Measurement Stopped", "The measurement was stopped.");
+                GUI.warningAlert("Stopped", "Measurement Stopped", "The measurement was stopped before completion.");
             } else {
                 GUI.infoAlert("Complete", "Measurement Completed", "The measurement completed without error.");
             }

@@ -97,7 +97,7 @@ public class GatedTEM extends Measurement {
         int currentStep = 0;
 
         // Loop over each configuration
-        for (SMU gate : new SMU[]{hotGate, coldGate}) {
+        for (SMU gate : new SMU[]{hotGate}) {
 
             // Turn on this gate and the thermo-voltage SMU
             thermoVoltage.turnOn();
