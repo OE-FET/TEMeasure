@@ -1,7 +1,6 @@
 package TEMeasure.GUI;
 
 import JISA.Control.ConfigStore;
-import JISA.GUI.Gridable;
 import JISA.GUI.Tabs;
 
 import java.io.IOException;
@@ -21,11 +20,11 @@ public class MainWindow extends Tabs {
 
         setMaximised(true);
         setExitOnClose(true);
-        addTab(connectionTab);
-        addTab(smuConfigTab);
-        addTab(tcConfigTab);
-        addTab(tempTab);
-        addTab(gatedTEMTab);
-        addTab(rtCalibrationTab);
+        add(connectionTab);
+        add(smuConfigTab);
+        add(tcConfigTab);
+        add(tempTab);
+        add(gatedTEMTab);
+        add(rtCalibrationTab);
     }
 }

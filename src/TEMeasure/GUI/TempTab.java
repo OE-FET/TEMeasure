@@ -201,8 +201,8 @@ public class TempTab extends Grid {
             return;
         }
 
-        tPlot.fullClear();
-        hPlot.fullClear();
+        tPlot.clear();
+        hPlot.clear();
 
         tPlot.watchList(log, 0, 1, "Sample", Color.RED);
         tPlot.watchList(log, 0, 21, "Sample SP", Color.ORANGE);

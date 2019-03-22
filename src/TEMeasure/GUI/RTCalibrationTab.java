@@ -60,8 +60,8 @@ public class RTCalibrationTab extends Grid {
         heaterParams.addSeparator();
         heaterTime = heaterParams.addDoubleField("Hold Time [s]");
         // Set-up heater parameters panel
-        rtStart = rtParams.addDoubleField("Start Current [uA]");
-        rtStop = rtParams.addDoubleField("Stop Current [uA]");
+        rtStart = rtParams.addDoubleField("Start Current [A]");
+        rtStop = rtParams.addDoubleField("Stop Current [A]");
         rtSteps = rtParams.addIntegerField("No. Steps");
         rtParams.addSeparator();
         rtTime = rtParams.addDoubleField("Hold Time [s]");
@@ -112,8 +112,8 @@ public class RTCalibrationTab extends Grid {
         heaterSteps.set(6);
         heaterTime.set(10.0);
 
-        rtStart.set(100.0);
-        rtStop.set(100.0);
+        rtStart.set(100.0e-6);
+        rtStop.set(100.0e-6);
         rtSteps.set(1);
         rtTime.set(0.1);
 
@@ -156,20 +156,20 @@ public class RTCalibrationTab extends Grid {
 
             measurement = new RTCalibration(heaterVoltage, rtMeasure, stageTemp);
 
-            measurement.configureRT(rtStart.get() * 1e-6, rtStop.get() * 1e-6, rtSteps.get())
+            measurement.configureRT(rtStart.get(), rtStop.get(), rtSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
                        .configureTiming(heaterTime.get(), rtTime.get(), intTime.get())
                        .configureSweeps(nSweeps.get());
 
             ResultTable results = measurement.newResults(outputFile.get());
 
-            heaterVPlot.fullClear();
+            heaterVPlot.clear();
             heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
 
-            heaterPPlot.fullClear();
+            heaterPPlot.clear();
             heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
 
-            rtPlot.fullClear();
+            rtPlot.clear();
             rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
 
             table.clear();

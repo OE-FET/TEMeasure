@@ -175,20 +175,20 @@ public class GatedTEMTab extends Grid {
 
             ResultTable results = measurement.newResults(outputFile.get());
 
-            heaterPlot.fullClear();
+            heaterPlot.clear();
             heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
 
-            gatePlot.fullClear();
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0, "Hot-Gate", Color.ORANGERED);
-            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
+            gatePlot.clear();
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0, "Hot-Gate", Color.ORANGERED);
+            gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
 
 
-            thermalPlot.fullClear();
+            thermalPlot.clear();
             thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
 
-            tpPlot.fullClear();
-            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 0.0);
-            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, GatedTEM.COL_GATE_CONFIG, 1.0);
+            tpPlot.clear();
+            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0);
+            tpPlot.watchList(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0);
 
             table.clear();
             table.watchList(results);
