@@ -63,6 +63,7 @@ public class GatedTEM extends Measurement {
         // Set integration time of thermo-voltage smu
         thermoVoltage.setIntegrationTime(intTime);
         thermoVoltage.useAutoRanges();
+        thermoVoltage.setCurrentRange(10E-12);
         thermoVoltage.setCurrent(0.0);
         thermoVoltage.setVoltageLimit(200.0);
 

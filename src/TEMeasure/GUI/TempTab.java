@@ -31,12 +31,8 @@ public class TempTab extends Grid {
 
         tPlot = new Plot("Temperatures", "Time [min]", "Temperature [K]");
         hPlot = new Plot("Heaters", "Time [min]", "Heater Power [%]");
-        tPlot.showMarkers(false);
-        tPlot.setXAutoRemove(60.0); // Remove points from plot after 60 minutes
         tPlot.showToolbar(true);
         tPlot.setAutoMode();
-        hPlot.showMarkers(false);
-        hPlot.setXAutoRemove(60.0);
         hPlot.showToolbar(true);
         hPlot.setAutoMode();
 
@@ -204,19 +200,33 @@ public class TempTab extends Grid {
         tPlot.clear();
         hPlot.clear();
 
-        tPlot.watchList(log, 0, 1, "Sample", Color.RED);
-        tPlot.watchList(log, 0, 21, "Sample SP", Color.ORANGE);
-        tPlot.watchList(log, 0, 2, "Radiation", Color.GOLD);
-        tPlot.watchList(log, 0, 22, "Radiation SP", Color.YELLOW);
-        tPlot.watchList(log, 0, 3, "First Stage", Color.GREEN);
-        tPlot.watchList(log, 0, 23, "First Stage SP", Color.LIME);
-        tPlot.watchList(log, 0, 4, "Second Stage", Color.BLUE);
-        tPlot.watchList(log, 0, 24, "Second Stage SP", Color.CORNFLOWERBLUE);
+        Series sample        = tPlot.watchList(log, 0, 1, "Sample", Color.RED);
+        Series sampleSP      = tPlot.watchList(log, 0, 21, "Sample SP", Color.ORANGE);
+        Series radiation     = tPlot.watchList(log, 0, 2, "Radiation", Color.GOLD);
+        Series radiationSP   = tPlot.watchList(log, 0, 22, "Radiation SP", Color.YELLOW);
+        Series firstStage    = tPlot.watchList(log, 0, 3, "First Stage", Color.GREEN);
+        Series firstStageSP  = tPlot.watchList(log, 0, 23, "First Stage SP", Color.LIME);
+        Series secondStage   = tPlot.watchList(log, 0, 4, "Second Stage", Color.BLUE);
+        Series secondStageSP = tPlot.watchList(log, 0, 24, "Second Stage SP", Color.CORNFLOWERBLUE);
 
-        hPlot.watchList(log, 0, 5, "Sample", Color.RED);
-        hPlot.watchList(log, 0, 6, "Radiation", Color.GOLD);
-        hPlot.watchList(log, 0, 7, "First Stage", Color.GREEN);
-        hPlot.watchList(log, 0, 8, "Second Stage", Color.BLUE);
+        sample.showMarkers(false);
+        sampleSP.showMarkers(false);
+        radiation.showMarkers(false);
+        radiationSP.showMarkers(false);
+        firstStage.showMarkers(false);
+        firstStageSP.showMarkers(false);
+        secondStage.showMarkers(false);
+        secondStageSP.showMarkers(false);
+
+        Series hSample      = hPlot.watchList(log, 0, 5, "Sample", Color.RED);
+        Series hRadiation   = hPlot.watchList(log, 0, 6, "Radiation", Color.GOLD);
+        Series hFirstStage  = hPlot.watchList(log, 0, 7, "First Stage", Color.GREEN);
+        Series hSecondStage = hPlot.watchList(log, 0, 8, "Second Stage", Color.BLUE);
+
+        hSample.showMarkers(false);
+        hRadiation.showMarkers(false);
+        hFirstStage.showMarkers(false);
+        hSecondStage.showMarkers(false);
 
         logger.start();
 
