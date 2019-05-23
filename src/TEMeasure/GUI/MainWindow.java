@@ -13,7 +13,7 @@ public class MainWindow extends Tabs {
     TCConfigTab      tcConfigTab      = new TCConfigTab(this);
     GatedTEMTab      gatedTEMTab      = new GatedTEMTab(this);
     RTCalibrationTab rtCalibrationTab = new RTCalibrationTab(this);
-    TempTab          tempTab          = new TempTab(this);
+    LogTab           logTab           = new LogTab(this);
 
     public MainWindow() throws IOException {
         super("TEMeasure");
@@ -23,7 +23,7 @@ public class MainWindow extends Tabs {
         add(connectionTab);
         add(smuConfigTab);
         add(tcConfigTab);
-        add(tempTab);
+        add(logTab);
         add(gatedTEMTab);
         add(rtCalibrationTab);
     }

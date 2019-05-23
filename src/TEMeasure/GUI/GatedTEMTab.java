@@ -3,6 +3,7 @@ package TEMeasure.GUI;
 import JISA.Control.Field;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
+import JISA.Devices.TMeter;
 import JISA.Experiment.ResultTable;
 import JISA.GUI.*;
 import TEMeasure.Measurement.GatedTEM;
@@ -14,9 +15,16 @@ import java.util.LinkedList;
 public class GatedTEMTab extends Grid {
 
     private final MainWindow mainWindow;
+    private final Fields     tempParams   = new Fields("Temperature");
     private final Fields     gateParams   = new Fields("Gate");
     private final Fields     heaterParams = new Fields("Heater");
     private final Fields     otherParams  = new Fields("Other");
+
+    private final Field<Double>  minT;
+    private final Field<Double>  maxT;
+    private final Field<Integer> numT;
+    private final Field<Double>  pctMargin;
+    private final Field<Double>  duration;
 
     private final Field<Double>  gateStart;
     private final Field<Double>  gateStop;
@@ -47,27 +55,33 @@ public class GatedTEMTab extends Grid {
         setNumColumns(1);
         setGrowth(true, false);
 
+        minT = tempParams.addDoubleField("Start Temp [K]", 300.0);
+        maxT = tempParams.addDoubleField("Stop Temp [K]", 100.0);
+        numT = tempParams.addIntegerField("No. Steps", 5);
+        tempParams.addSeparator();
+        pctMargin = tempParams.addDoubleField("Stability Margin [%]", 1.0);
+        duration = tempParams.addDoubleField("Stability Time [s]", 30.0 * 60.0);
+
         // Set-up gate parameters panel
         gateStart = gateParams.addDoubleField("Start Gate [V]");
-        gateStop  = gateParams.addDoubleField("Stop Gate [V]");
+        gateStop = gateParams.addDoubleField("Stop Gate [V]");
         gateSteps = gateParams.addIntegerField("No. Steps");
         gateParams.addSeparator();
-        gateTime  = gateParams.addDoubleField("Hold Time [s]");
+        gateTime = gateParams.addDoubleField("Hold Time [s]");
 
         // Set-up heater parameters panel
         heaterStart = heaterParams.addDoubleField("Start Heater [V]");
-        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]");
+        heaterStop = heaterParams.addDoubleField("Stop Heater [V]");
         heaterSteps = heaterParams.addIntegerField("No. Steps");
         heaterParams.addSeparator();
-        heaterTime  = heaterParams.addDoubleField("Hold Time [s]");
+        heaterTime = heaterParams.addDoubleField("Hold Time [s]");
 
         // Set-up other parameters panel
-        intTime    = otherParams.addDoubleField("Integration Time [s]");
+        intTime = otherParams.addDoubleField("Integration Time [s]");
         outputFile = otherParams.addFileSave("Output File");
 
-        Grid topGrid    = new Grid("", gateParams, heaterParams, otherParams);
-        Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
-        bottomGrid.setNumColumns(2);
+        Grid topGrid    = new Grid("", 4, tempParams, gateParams, heaterParams, otherParams);
+        Grid bottomGrid = new Grid("", 2, heaterPlot, gatePlot, thermalPlot, tpPlot);
         ;
 
         add(topGrid);
@@ -103,6 +117,7 @@ public class GatedTEMTab extends Grid {
 
     private void disableInputs(boolean disable) {
 
+        tempParams.setFieldsDisabled(disable);
         gateParams.setFieldsDisabled(disable);
         heaterParams.setFieldsDisabled(disable);
         otherParams.setFieldsDisabled(disable);
@@ -127,12 +142,17 @@ public class GatedTEMTab extends Grid {
             // Disabled all the text-boxes etc
             disableInputs(true);
 
+            try {
+                mainWindow.logTab.startLog(outputFile.get().replace(".csv", "").concat("-log.csv"));
+            } catch (Exception ignored) {}
+
             // Get the instruments that have been configured on the config tabs
             SMU                thermoVoltage   = mainWindow.smuConfigTab.tvSMU.getSMU();
             SMU                hotGateVoltage  = mainWindow.smuConfigTab.hotGateSMU.getSMU();
             SMU                coldGateVoltage = mainWindow.smuConfigTab.coldGateSMU.getSMU();
             SMU                heaterVoltage   = mainWindow.smuConfigTab.heaterSMU.getSMU();
             TC                 stageTemp       = mainWindow.tcConfigTab.stage.getTController();
+            TMeter             arm             = mainWindow.tcConfigTab.armSense.getTMeter();
             LinkedList<String> errors          = new LinkedList<>();
 
             // Check that everything is present and configured
@@ -156,6 +176,10 @@ public class GatedTEMTab extends Grid {
                 errors.add("Sample T-Controller is not configured.");
             }
 
+            if (arm == null) {
+                errors.add("Arm T-Sensor is not configured.");
+            }
+
             if (outputFile.get().trim().equals("")) {
                 errors.add("No output file specified.");
             }
@@ -166,12 +190,13 @@ public class GatedTEMTab extends Grid {
             }
 
             // Create a new measurement object using our instruments
-            measurement = new GatedTEM(thermoVoltage, hotGateVoltage, coldGateVoltage, heaterVoltage, stageTemp);
+            measurement = new GatedTEM(thermoVoltage, hotGateVoltage, coldGateVoltage, heaterVoltage, stageTemp, arm);
 
             // Configure experiment parameters using values in fields
             measurement.configureGate(gateStart.get(), gateStop.get(), gateSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
-                       .configureTiming(gateTime.get(), heaterTime.get(), intTime.get());
+                       .configureTiming(gateTime.get(), heaterTime.get(), intTime.get())
+                       .configureTemperatures(minT.get(), maxT.get(), numT.get(), pctMargin.get(), duration.get());
 
             // Stream results directly to file
             results = measurement.newResults(outputFile.get());
@@ -180,6 +205,8 @@ public class GatedTEMTab extends Grid {
 
             // Do the actual measurement now that everything's ready
             measurement.performMeasurement();
+
+            mainWindow.logTab.stopLog();
 
             // Check whether it finished because "stop" was pressed or it completing fully
             if (measurement.wasStopped()) {
@@ -195,6 +222,8 @@ public class GatedTEMTab extends Grid {
             GUI.errorAlert("Error", "Exception Encountered", e.getMessage());
 
         } finally {
+
+            mainWindow.logTab.stopLog();
 
             // If we actually got some results, then finalise the table (closes the file)
             if (results != null) {

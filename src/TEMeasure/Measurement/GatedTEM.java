@@ -2,6 +2,7 @@ package TEMeasure.Measurement;
 
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
+import JISA.Devices.TMeter;
 import JISA.Experiment.Measurement;
 import JISA.Experiment.ResultTable;
 import JISA.Util;
@@ -28,23 +29,31 @@ public class GatedTEM extends Measurement {
     private             SMU      coldGate;
     private             SMU      heater;
     private             TC       stage;
-    // Parameters, with default values
-    private             double   gateStart              = -40;         // -40 Volts
-    private             double   gateStop               = 0;           //   0 Volts
-    private             int      gateSteps              = 9;           //   9 Steps
-    private             double   heaterStart            = 0;           //   0 Volts
-    private             double   heaterStop             = 5;           //   5 Volts
-    private             int      heaterSteps            = 6;           //   6 Steps
-    private             int      gateDelay              = 20000;       //  20 seconds
-    private             int      heaterDelay            = 10000;       //  10 seconds
-    private             double   intTime                = 10.0 / 50.0; //  10 power-line cycles
+    private             TMeter   arm;
 
-    public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TC stageController) {
+    // Parameters, with default values
+    private double gateStart    = -40;         // -40 Volts
+    private double gateStop     = 0;           //   0 Volts
+    private int    gateSteps    = 9;           //   9 Steps
+    private double heaterStart  = 0;           //   0 Volts
+    private double heaterStop   = 5;           //   5 Volts
+    private int    heaterSteps  = 6;           //   6 Steps
+    private int    gateDelay    = 20000;       //  20 seconds
+    private int    heaterDelay  = 10000;       //  10 seconds
+    private double intTime      = 10.0 / 50.0; //  10 power-line
+    private double tempStart    = 300.0;
+    private double tempStop     = 100.0;
+    private int    tempSteps    = 5;
+    private double tempPCT      = 1.0;
+    private int    tempDuration = 30 * 60 * 1000; // 30 minutes
+
+    public GatedTEM(SMU thermoVoltageSMU, SMU hotGateSMU, SMU coldGateSMU, SMU heaterSMU, TC stageController, TMeter armSensor) {
         thermoVoltage = thermoVoltageSMU;
         hotGate = hotGateSMU;
         coldGate = coldGateSMU;
         heater = heaterSMU;
         stage = stageController;
+        arm = armSensor;
     }
 
     private void configureInstruments() throws Exception {
@@ -89,16 +98,26 @@ public class GatedTEM extends Measurement {
         configureInstruments();
 
         // Create arrays of voltage values to use for gate and heater voltages
-        double[] gates   = Util.makeLinearArray(gateStart, gateStop, gateSteps);
-        double[] heaters = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
+        double[] temperatures = Util.makeLinearArray(tempStart, tempStop, tempSteps);
+        double[] gates        = Util.makeLinearArray(gateStart, gateStop, gateSteps);
+        double[] heaters      = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
 
         // This number indicates whether we're using hot-gate (0) or cold-gate (1) in our data
         double config = 0;
 
         int currentStep = 0;
+        SMU gate        = hotGate;
 
         // Loop over each configuration
-        for (SMU gate : new SMU[]{hotGate}) {
+        for (double T : temperatures) {
+
+            // Change the set-point of the temperature controller and use auto heater
+            stage.setTargetTemperature(T);
+            stage.useAutoHeater();
+
+            // Wait for stage to be in range for 10 seconds and then wait for arm to be stable
+            stage.waitForStableTemperature(T, 1.0, 10000);
+            arm.waitForStableTemperature(tempPCT, tempDuration);
 
             // Turn on this gate and the thermo-voltage SMU
             thermoVoltage.turnOn();
@@ -138,7 +157,7 @@ public class GatedTEM extends Measurement {
                             thermoVoltage.getVoltage(),  // Thermo-voltage
                             G,                           // Gate set-point
                             config,                      // Hot-Gate (0) or Cold-Gate (1) ?
-                            thermoVoltage.getCurrent()
+                            thermoVoltage.getCurrent()   // Leakage current
                     );
 
                     currentStep++;
@@ -150,12 +169,6 @@ public class GatedTEM extends Measurement {
                 sleep(heaterDelay);
 
             }
-
-            // Reverse gate voltages for next iteration of gate loop
-            gates = Util.reverseArray(gates);
-
-            // Next iteration will be in next configuration
-            config++;
 
             // Turn off this gate before using the next
             gate.turnOff();
@@ -233,5 +246,13 @@ public class GatedTEM extends Measurement {
         return this;
     }
 
+    public GatedTEM configureTemperatures(double minT, double maxT, int numT, double pctMargin, double duration) {
+        tempStart = minT;
+        tempStop = maxT;
+        tempSteps = numT;
+        tempPCT = pctMargin;
+        tempDuration = (int) (1000 * duration);
+        return this;
+    }
 
 }

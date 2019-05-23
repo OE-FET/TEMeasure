@@ -3,6 +3,8 @@ package TEMeasure.Measurement;
 import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
+import JISA.Devices.TMeter;
+import JISA.Enums.Source;
 import JISA.Experiment.Measurement;
 import JISA.Experiment.ResultTable;
 import JISA.Util;
@@ -25,6 +27,7 @@ public class RTCalibration extends Measurement {
     private             SMU      heater;
     private             SMU      rt;
     private             TC       stageTC;
+    private             TMeter   arm;
     private             int      sweeps;
     private             double   heaterStart;
     private             double   heaterStop;
@@ -35,11 +38,17 @@ public class RTCalibration extends Measurement {
     private             double   intTime;
     private             int      delTime;
     private             int      heaterDelay;
+    private             double   tempStart             = 300.0;
+    private             double   tempStop              = 100.0;
+    private             int      tempSteps             = 5;
+    private             double   tempPCT               = 1.0;
+    private             int      tempDuration          = 30 * 60 * 1000; // 30 minutes
 
-    public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC) {
+    public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC, TMeter armSensor) {
         heater = heaterSMU;
         rt = rtSMU;
         this.stageTC = stageTC;
+        arm = armSensor;
     }
 
     @Override
@@ -48,83 +57,94 @@ public class RTCalibration extends Measurement {
         ResultTable results = getResults();
 
         // Create arrays of voltages and currents that we will use
-        double[] heaters  = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
-        double[] currents = Util.makeLinearArray(rtStart, rtStop, rtSteps);
+        double[] temperatures = Util.makeLinearArray(tempStart, tempStop, tempSteps);
+        double[] heaters      = Util.makeLinearArray(heaterStart, heaterStop, heaterSteps);
+        double[] currents     = Util.makeLinearArray(rtStart, rtStop, rtSteps);
 
         // Make sure everything's off first
         heater.turnOff();
         rt.turnOff();
 
         // Configure heater SMU
-        heater.setSource(SMU.Source.VOLTAGE);
+        heater.setSource(Source.VOLTAGE);
         heater.useAutoRanges();
         heater.useFourProbe(false);
 
         // Configure RT SMU
-        rt.setSource(SMU.Source.CURRENT);
+        rt.setSource(Source.CURRENT);
         rt.useAutoRanges();
         rt.useFourProbe(true);
         rt.setIntegrationTime(intTime);
 
         int currentStep = 0;
 
-        for (int sweep = 0; sweep < sweeps; sweep++) {
+        for (double T : temperatures) {
 
-            // Initial value
-            heater.setVoltage(heaterStart);
-            heater.turnOn();
+            stageTC.setTargetTemperature(T);
+            stageTC.useAutoHeater();
 
-            for (double H : heaters) {
+            stageTC.waitForStableTemperature(T, 1.0, 10000);
+            arm.waitForStableTemperature(tempPCT, tempDuration);
 
-                // Set heater voltage and wait heater hold time
-                heater.setVoltage(H);
-                sleep(heaterDelay);
+            for (int sweep = 0; sweep < sweeps; sweep++) {
 
-                // Initial value for rt
-                rt.setCurrent(rtStart);
-                rt.turnOn();
-                for (double I : currents) {
+                // Initial value
+                heater.setVoltage(heaterStart);
+                heater.turnOn();
 
-                    // Set current and wait for current hold time
-                    rt.setCurrent(I);
-                    sleep(delTime);
+                for (double H : heaters) {
 
-                    // Calculate heater power
-                    double heaterVoltage = heater.getVoltage();
-                    double heaterCurrent = heater.getCurrent();
-                    double heaterPower   = heaterVoltage * heaterCurrent;
+                    // Set heater voltage and wait heater hold time
+                    heater.setVoltage(H);
+                    sleep(heaterDelay);
 
-                    // Calculate RT resistance (assuming 0 y-intercept of V vs I)
-                    double rtVoltage    = rt.getVoltage();
-                    double rtCurrent    = rt.getCurrent();
-                    double rtResistance = rtVoltage / rtCurrent;
+                    // Initial value for rt
+                    rt.setCurrent(rtStart);
+                    rt.turnOn();
+                    for (double I : currents) {
 
-                    // Add data point to results
-                    results.addData(
-                            (double) currentStep,      // Measurement number
-                            (double) sweep,            // Sweep number
-                            stageTC.getTemperature(),  // Sample temperature
-                            heaterVoltage,             // Heater voltage
-                            heaterCurrent,             // Heater current
-                            heaterPower,               // Heater power
-                            rtVoltage,                 // RT voltage
-                            rtCurrent,                 // RT current
-                            rtResistance               // RT resistance
-                    );
+                        // Set current and wait for current hold time
+                        rt.setCurrent(I);
+                        sleep(delTime);
 
-                    // Increment measurement number by 1
-                    currentStep++;
+                        // Calculate heater power
+                        double heaterVoltage = heater.getVoltage();
+                        double heaterCurrent = heater.getCurrent();
+                        double heaterPower   = heaterVoltage * heaterCurrent;
+
+                        // Calculate RT resistance (assuming 0 y-intercept of V vs I)
+                        double rtVoltage    = rt.getVoltage();
+                        double rtCurrent    = rt.getCurrent();
+                        double rtResistance = rtVoltage / rtCurrent;
+
+                        // Add data point to results
+                        results.addData(
+                                (double) currentStep,      // Measurement number
+                                (double) sweep,            // Sweep number
+                                stageTC.getTemperature(),  // Sample temperature
+                                heaterVoltage,             // Heater voltage
+                                heaterCurrent,             // Heater current
+                                heaterPower,               // Heater power
+                                rtVoltage,                 // RT voltage
+                                rtCurrent,                 // RT current
+                                rtResistance               // RT resistance
+                        );
+
+                        // Increment measurement number by 1
+                        currentStep++;
+
+                    }
+
+                    // Turn off current through RT
+                    rt.turnOff();
 
                 }
 
-                // Turn off current through RT
-                rt.turnOff();
+                // Turn off heater and wait for heater hold time
+                heater.turnOff();
+                sleep(heaterDelay);
 
             }
-
-            // Turn off heater and wait for heater hold time
-            heater.turnOff();
-            sleep(heaterDelay);
 
         }
 
@@ -202,6 +222,15 @@ public class RTCalibration extends Measurement {
         heaterDelay = (int) (heaterHold * 1000);
         delTime = (int) (delayTime * 1000);
         intTime = integrationTime;
+        return this;
+    }
+
+    public RTCalibration configureTemperatures(double minT, double maxT, int numT, double pctMargin, double duration) {
+        tempStart = minT;
+        tempStop = maxT;
+        tempSteps = numT;
+        tempPCT = pctMargin;
+        tempDuration = (int) (1000 * duration);
         return this;
     }
 
