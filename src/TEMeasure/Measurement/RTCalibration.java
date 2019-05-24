@@ -3,6 +3,7 @@ package TEMeasure.Measurement;
 import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
+import JISA.Enums.Source;
 import JISA.Experiment.Measurement;
 import JISA.Experiment.ResultTable;
 import JISA.Util;
@@ -56,12 +57,12 @@ public class RTCalibration extends Measurement {
         rt.turnOff();
 
         // Configure heater SMU
-        heater.setSource(SMU.Source.VOLTAGE);
+        heater.setSource(Source.VOLTAGE);
         heater.useAutoRanges();
         heater.useFourProbe(false);
 
         // Configure RT SMU
-        rt.setSource(SMU.Source.CURRENT);
+        rt.setSource(Source.CURRENT);
         rt.useAutoRanges();
         rt.useFourProbe(true);
         rt.setIntegrationTime(intTime);

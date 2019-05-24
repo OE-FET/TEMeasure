@@ -11,6 +11,7 @@ public class GatedTEM extends Measurement {
     // Names and units for columns in our results
     public static final String[] COLUMNS                = {"No.", "Sample Temperature", "Gate Voltage", "Gate Current", "Heater Voltage", "Heater Current", "Heater Power", "Thermo-Voltage", "Gate Set", "Gate Config", "Thermo-Current"};
     public static final String[] UNITS                  = {"~", "K", "V", "A", "V", "A", "W", "V", "V", "~", "A"};
+
     // Constants to define what each column in our results is meant to be
     public static final int      COL_NUMBER             = 0;  // Measurement Number
     public static final int      COL_SAMPLE_TEMPERATURE = 1;  // Sample Temperature
@@ -28,6 +29,7 @@ public class GatedTEM extends Measurement {
     private             SMU      coldGate;
     private             SMU      heater;
     private             TC       stage;
+
     // Parameters, with default values
     private             double   gateStart              = -40;         // -40 Volts
     private             double   gateStop               = 0;           //   0 Volts
