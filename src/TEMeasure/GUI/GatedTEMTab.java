@@ -1,5 +1,6 @@
 package TEMeasure.GUI;
 
+import JISA.Control.ConfigStore;
 import JISA.Control.Field;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
@@ -44,26 +45,40 @@ public class GatedTEMTab extends Grid {
         super("Gated TE Measurement");
         this.mainWindow = mainWindow;
 
+        ConfigStore c = mainWindow.configStore;
+
         setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up gate parameters panel
-        gateStart = gateParams.addDoubleField("Start Gate [V]");
-        gateStop  = gateParams.addDoubleField("Stop Gate [V]");
-        gateSteps = gateParams.addIntegerField("No. Steps");
+        gateStart = gateParams.addDoubleField("Start Gate [V]", c.getDoubleOrDefault("GTEM-gateStart", -7.0));
+        gateStop  = gateParams.addDoubleField("Stop Gate [V]", c.getDoubleOrDefault("GTEM-gateStop", -2.0));
+        gateSteps = gateParams.addIntegerField("No. Steps", c.getIntOrDefault("GTEM-gateSteps", 11));
         gateParams.addSeparator();
-        gateTime  = gateParams.addDoubleField("Hold Time [s]");
+        gateTime  = gateParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("GTEM-gateTime", 20.0));
 
         // Set-up heater parameters panel
-        heaterStart = heaterParams.addDoubleField("Start Heater [V]");
-        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]");
-        heaterSteps = heaterParams.addIntegerField("No. Steps");
+        heaterStart = heaterParams.addDoubleField("Start Heater [V]", c.getDoubleOrDefault("GTEM-heaterStart", 0.0));
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", c.getDoubleOrDefault("GTEM-heaterStop", -5.0));
+        heaterSteps = heaterParams.addIntegerField("No. Steps", c.getIntOrDefault("GTEM-heaterSteps", 11));
         heaterParams.addSeparator();
-        heaterTime  = heaterParams.addDoubleField("Hold Time [s]");
+        heaterTime  = heaterParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("GTEM-heaterTime", 30.0));
 
         // Set-up other parameters panel
-        intTime    = otherParams.addDoubleField("Integration Time [s]");
-        outputFile = otherParams.addFileSave("Output File");
+        intTime    = otherParams.addDoubleField("Integration Time [s]", c.getDoubleOrDefault("GTEM-intTime", 200e-3));
+        outputFile = otherParams.addFileSave("Output File", c.getStringOrDefault("GTEM-outputFile", ""));
+
+        // Save values to config file when changed
+        gateStart.setOnChange(() -> c.set("GTEM-gateStart", gateStart.get()));
+        gateStop.setOnChange(() -> c.set("GTEM-gateStop", gateStop.get()));
+        gateSteps.setOnChange(() -> c.set("GTEM-gateSteps", gateSteps.get()));
+        gateTime.setOnChange(() -> c.set("GTEM-gateTime", gateTime.get()));
+        heaterStart.setOnChange(() -> c.set("GTEM-heaterStart", heaterStart.get()));
+        heaterStop.setOnChange(() -> c.set("GTEM-heaterStop", heaterStop.get()));
+        heaterSteps.setOnChange(() -> c.set("GTEM-heaterSteps", heaterSteps.get()));
+        heaterTime.setOnChange(() -> c.set("GTEM-heaterTime", heaterTime.get()));
+        intTime.setOnChange(() -> c.set("GTEM-intTime", intTime.get()));
+        outputFile.setOnChange(() -> c.set("GTEM-outputFile", outputFile.get()));
 
         Grid topGrid    = new Grid("", gateParams, heaterParams, otherParams);
         Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
@@ -80,24 +95,6 @@ public class GatedTEMTab extends Grid {
 
         addToolbarButton("Start", this::run);
         addToolbarButton("Stop", this::stop);
-
-        fillDefaults();
-
-    }
-
-    private void fillDefaults() {
-
-        heaterStart.set(0.0);
-        heaterStop.set(5.0);
-        heaterSteps.set(6);
-        heaterTime.set(10.0);
-
-        gateStart.set(-40.0);
-        gateStop.set(0.0);
-        gateSteps.set(9);
-        gateTime.set(20.0);
-
-        intTime.set(10.0 / 50.0);
 
     }
 

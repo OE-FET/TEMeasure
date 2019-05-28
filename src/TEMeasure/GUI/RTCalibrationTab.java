@@ -1,6 +1,8 @@
 package TEMeasure.GUI;
 
+import JISA.Control.ConfigStore;
 import JISA.Control.Field;
+import JISA.Control.SRunnable;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
 import JISA.Experiment.ResultTable;
@@ -50,27 +52,42 @@ public class RTCalibrationTab extends Grid {
 
         this.mainWindow = mainWindow;
 
+        ConfigStore c = mainWindow.configStore;
+
         setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up heater parameters panel
-        heaterStart = heaterParams.addDoubleField("Start Heater [V]");
-        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]");
-        heaterSteps = heaterParams.addIntegerField("No. Steps");
+        heaterStart = heaterParams.addDoubleField("Start Heater [V]", c.getDoubleOrDefault("RTC-heaterStart", 0.0));
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", c.getDoubleOrDefault("RTC-heaterStop", 5.0));
+        heaterSteps = heaterParams.addIntegerField("No. Steps", c.getIntOrDefault("RTC-heaterSteps", 11));
         heaterParams.addSeparator();
-        heaterTime  = heaterParams.addDoubleField("Hold Time [s]");
+        heaterTime  = heaterParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("RTC-heaterTime", 30.0));
 
         // Set-up heater parameters panel
-        rtStart = rtParams.addDoubleField("Start Current [A]");
-        rtStop  = rtParams.addDoubleField("Stop Current [A]");
-        rtSteps = rtParams.addIntegerField("No. Steps");
+        rtStart = rtParams.addDoubleField("Start Current [A]", c.getDoubleOrDefault("RTC-rtStart", 100e-6));
+        rtStop  = rtParams.addDoubleField("Stop Current [A]", c.getDoubleOrDefault("RTC-rtStop", 100e-6));
+        rtSteps = rtParams.addIntegerField("No. Steps", c.getIntOrDefault("RTC-rtSteps", 5));
         rtParams.addSeparator();
-        rtTime  = rtParams.addDoubleField("Hold Time [s]");
+        rtTime  = rtParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("RTC-rtTime", 100e-3));
 
         // Set-up other parameters panel
-        nSweeps    = otherParams.addIntegerField("No. Sweeps");
-        intTime    = otherParams.addDoubleField("Integration Time [s]");
-        outputFile = otherParams.addFileSave("Output File");
+        nSweeps    = otherParams.addIntegerField("No. Sweeps", c.getIntOrDefault("RTC-nSweeps", 2));
+        intTime    = otherParams.addDoubleField("Integration Time [s]", c.getDoubleOrDefault("RTC-intTime", 200e-3));
+        outputFile = otherParams.addFileSave("Output File", c.getStringOrDefault("RTC-outputFile", ""));
+
+        heaterStart.setOnChange(() -> c.set("RTC-heaterStart", heaterStart.get()));
+        heaterStop.setOnChange(() -> c.set("RTC-heaterStop", heaterStop.get()));
+        heaterSteps.setOnChange(() -> c.set("RTC-heaterSteps", heaterSteps.get()));
+        heaterTime.setOnChange(() -> c.set("RTC-heaterTime", heaterTime.get()));
+        rtStart.setOnChange(() -> c.set("RTC-rtStart", rtStart.get()));
+        rtStop.setOnChange(() -> c.set("RTC-rtStop", rtStop.get()));
+        rtSteps.setOnChange(() -> c.set("RTC-rtSteps", rtSteps.get()));
+        rtTime.setOnChange(() -> c.set("RTC-rtTime", rtTime.get()));
+        nSweeps.setOnChange(() -> c.set("RTC-nSweeps", nSweeps.get()));
+        intTime.setOnChange(() -> c.set("RTC-intTime", intTime.get()));
+        outputFile.setOnChange(() -> c.set("RTC-outputFile", outputFile.get()));
+
 
         Grid topGrid    = new Grid("", heaterParams, rtParams, otherParams);
         Grid bottomGrid = new Grid("", heaterVPlot, heaterPPlot, rtPlot);
