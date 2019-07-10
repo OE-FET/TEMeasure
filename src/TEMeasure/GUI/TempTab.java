@@ -38,7 +38,13 @@ public class TempTab extends Grid {
 
         Fields         control  = new Fields("Control");
         Field<Double>  setPoint = control.addDoubleField("Set-Point [K]");
-        Field<Integer> range    = control.addChoice("Heater Range", "Off (0%)", "Low (1%)", "Medium (10%)", "High (100%)");
+        Field<Integer> range    = control.addChoice(
+                "Heater Range",
+                "Off (0%)",
+                "Low (1%)",
+                "Medium (10%)",
+                "High (100%)"
+        );
 
 
         ClickHandler refresh = () -> {
@@ -170,14 +176,17 @@ public class TempTab extends Grid {
         }
 
         if (sample == null || radiation == null || firstStage == null || secondStage == null) {
+
             GUI.errorAlert("Error", "Cannot start logger", "Temperature controllers not properly configured");
             return;
+
         }
 
 
         String fileName = String.format("TLog-%d.csv", System.currentTimeMillis());
 
         try {
+
             log = new ResultStream(
                     fileName,
                     "Time",
@@ -206,9 +215,12 @@ public class TempTab extends Grid {
                     "SP3",
                     "SP4"
             );
+
         } catch (IOException e) {
+
             e.printStackTrace();
             return;
+
         }
 
         tPlot.clear();

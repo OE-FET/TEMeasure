@@ -78,6 +78,10 @@ public class GatedTEM extends Measurement {
         thermoVoltage.setIntegrationTime(intTime);
         thermoVoltage.useAutoVoltageRange();
 
+        if (thermoVoltage instanceof SMU) {
+            ((SMU) thermoVoltage).setCurrentRange(10e-12);
+        }
+
         // Configure gate SMUs
         hotGate.useAutoRanges();
         hotGate.setVoltage(gateStart);
