@@ -36,10 +36,10 @@ public class RTCalibrationTab extends Grid {
     private final Field<Double>  intTime;
     private final Field<String>  outputFile;
 
-    private final Plot  heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
-    private final Plot  heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
-    private final Plot  rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
-    private final Table table       = new Table("Table of Results");
+    private final Plot          heaterVPlot = new Plot("Heater Voltage", "Measurement No.", "Heater Voltage [V]");
+    private final Plot          heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
+    private final Plot          rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
+    private final Table         table       = new Table("Table of Results");
     private final Field<Double> restTime;
 
     private RTCalibration measurement = null;
@@ -48,56 +48,43 @@ public class RTCalibrationTab extends Grid {
 
         super("RT Calibration");
         heaterSMU = mainWindow.smuConfigTab.heaterSMU;
-        rtSMU = mainWindow.smuConfigTab.rtSMU;
-        stageTC = mainWindow.tcConfigTab.stage;
+        rtSMU     = mainWindow.smuConfigTab.rtSMU;
+        stageTC   = mainWindow.tcConfigTab.stage;
 
         this.mainWindow = mainWindow;
-
-        ConfigStore c = mainWindow.configStore;
 
         setNumColumns(1);
         setGrowth(true, false);
 
         // Set-up heater parameters panel
-        heaterStart = heaterParams.addDoubleField("Start Heater [V]", c.getDoubleOrDefault("RTC-heaterStart", 0.0));
-        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", c.getDoubleOrDefault("RTC-heaterStop", 5.0));
-        heaterSteps = heaterParams.addIntegerField("No. Steps", c.getIntOrDefault("RTC-heaterSteps", 11));
+        heaterStart = heaterParams.addDoubleField("Start Heater [V]", 0.0);
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", 5.0);
+        heaterSteps = heaterParams.addIntegerField("No. Steps", 11);
         heaterParams.addSeparator();
-        heaterTime  = heaterParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("RTC-heaterTime", 30.0));
-        restTime    = heaterParams.addDoubleField("Resting Time [s]",  c.getDoubleOrDefault("RTC-restTime", 300));
+        heaterTime = heaterParams.addDoubleField("Hold Time [s]", 30.0);
+        restTime   = heaterParams.addDoubleField("Resting Time [s]", 300);
 
         // Set-up heater parameters panel
-        rtStart = rtParams.addDoubleField("Start Current [A]", c.getDoubleOrDefault("RTC-rtStart", 100e-6));
-        rtStop  = rtParams.addDoubleField("Stop Current [A]", c.getDoubleOrDefault("RTC-rtStop", 100e-6));
-        rtSteps = rtParams.addIntegerField("No. Steps", c.getIntOrDefault("RTC-rtSteps", 5));
+        rtStart = rtParams.addDoubleField("Start Current [A]", 100e-6);
+        rtStop  = rtParams.addDoubleField("Stop Current [A]", 100e-6);
+        rtSteps = rtParams.addIntegerField("No. Steps", 5);
         rtParams.addSeparator();
-        rtTime  = rtParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("RTC-rtTime", 100e-3));
+        rtTime = rtParams.addDoubleField("Hold Time [s]", 100e-3);
 
         // Set-up other parameters panel
-        nSweeps    = otherParams.addIntegerField("No. Sweeps", c.getIntOrDefault("RTC-nSweeps", 2));
-        intTime    = otherParams.addDoubleField("Integration Time [s]", c.getDoubleOrDefault("RTC-intTime", 200e-3));
-        outputFile = otherParams.addFileSave("Output File", c.getStringOrDefault("RTC-outputFile", ""));
+        nSweeps    = otherParams.addIntegerField("No. Sweeps", 2);
+        intTime    = otherParams.addDoubleField("Integration Time [s]", 200e-3);
+        outputFile = otherParams.addFileSave("Output File", "");
 
-        heaterStart.setOnChange(() -> c.set("RTC-heaterStart", heaterStart.get()));
-        heaterStop.setOnChange(() -> c.set("RTC-heaterStop", heaterStop.get()));
-        heaterSteps.setOnChange(() -> c.set("RTC-heaterSteps", heaterSteps.get()));
-        heaterTime.setOnChange(() -> c.set("RTC-heaterTime", heaterTime.get()));
-        rtStart.setOnChange(() -> c.set("RTC-rtStart", rtStart.get()));
-        rtStop.setOnChange(() -> c.set("RTC-rtStop", rtStop.get()));
-        rtSteps.setOnChange(() -> c.set("RTC-rtSteps", rtSteps.get()));
-        rtTime.setOnChange(() -> c.set("RTC-rtTime", rtTime.get()));
-        nSweeps.setOnChange(() -> c.set("RTC-nSweeps", nSweeps.get()));
-        intTime.setOnChange(() -> c.set("RTC-intTime", intTime.get()));
-        outputFile.setOnChange(() -> c.set("RTC-outputFile", outputFile.get()));
-        restTime.setOnChange(() -> c.set("RTC-restTime", restTime.get()));
+        // Link to config file - loads last used values (and will save values on exit)
+        heaterParams.loadFromConfig("rt-heater-params", mainWindow.configStore);
+        heaterParams.loadFromConfig("rt-rt-params", mainWindow.configStore);
+        heaterParams.loadFromConfig("rt-other-params", mainWindow.configStore);
 
-
-        Grid topGrid    = new Grid("", heaterParams, rtParams, otherParams);
-        Grid bottomGrid = new Grid("", heaterVPlot, heaterPPlot, rtPlot);
+        Grid topGrid = new Grid(heaterParams, rtParams, otherParams, heaterVPlot, heaterPPlot, rtPlot);
 
         add(topGrid);
-        add(bottomGrid);
-        add(new Grid("", table));
+        add(new Grid(table));
 
         heaterVPlot.showLegend(false);
         heaterPPlot.showLegend(false);
@@ -144,9 +131,9 @@ public class RTCalibrationTab extends Grid {
 
             disableInputs(true);
 
-            SMU                heaterVoltage = heaterSMU.getSMU();
-            SMU                rtMeasure     = rtSMU.getSMU();
-            TC                 stageTemp     = stageTC.getTController();
+            SMU                heaterVoltage = heaterSMU.get();
+            SMU                rtMeasure     = rtSMU.get();
+            TC                 stageTemp     = stageTC.get();
             LinkedList<String> errors        = new LinkedList<>();
 
             if (heaterVoltage == null) {
@@ -201,13 +188,25 @@ public class RTCalibrationTab extends Grid {
     private void configurePlots(ResultTable results) {
 
         heaterVPlot.clear();
-        heaterVPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE, "Voltage", Color.TEAL);
+
+        heaterVPlot.createSeries()
+                   .watch(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_VOLTAGE)
+                   .setName("Voltage")
+                   .setColour(Colour.TEAL);
 
         heaterPPlot.clear();
-        heaterPPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER, "Power", Color.ORANGE);
+
+        heaterPPlot.createSeries()
+                   .watch(results, RTCalibration.COL_NUMBER, RTCalibration.COL_HEATER_POWER)
+                   .setName("Power")
+                   .setColour(Colour.ORANGE);
 
         rtPlot.clear();
-        rtPlot.watchList(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE, "Resistance", Color.CORNFLOWERBLUE);
+
+        rtPlot.createSeries()
+              .watch(results, RTCalibration.COL_NUMBER, RTCalibration.COL_RT_RESISTANCE)
+              .setName("Resistance")
+              .setColour(Colour.CORNFLOWERBLUE);
 
         table.clear();
         table.watchList(results);
@@ -223,4 +222,5 @@ public class RTCalibrationTab extends Grid {
     public boolean isRunning() {
         return measurement != null && measurement.isRunning();
     }
+
 }

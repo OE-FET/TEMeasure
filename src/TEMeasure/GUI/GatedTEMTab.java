@@ -4,6 +4,7 @@ import JISA.Control.ConfigStore;
 import JISA.Control.Field;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
+import JISA.Devices.VMeter;
 import JISA.Experiment.ResultTable;
 import JISA.GUI.*;
 import TEMeasure.Measurement.GatedTEM;
@@ -42,52 +43,39 @@ public class GatedTEMTab extends Grid {
 
     public GatedTEMTab(MainWindow mainWindow) {
 
-        super("Gated TE Measurement");
-        this.mainWindow = mainWindow;
-
-        ConfigStore c = mainWindow.configStore;
-
-        setNumColumns(1);
+        super("Gated TE Measurement", 1);
         setGrowth(true, false);
 
+        this.mainWindow = mainWindow;
+
         // Set-up gate parameters panel
-        gateStart = gateParams.addDoubleField("Start Gate [V]", c.getDoubleOrDefault("GTEM-gateStart", -7.0));
-        gateStop  = gateParams.addDoubleField("Stop Gate [V]", c.getDoubleOrDefault("GTEM-gateStop", -2.0));
-        gateSteps = gateParams.addIntegerField("No. Steps", c.getIntOrDefault("GTEM-gateSteps", 11));
+        gateStart = gateParams.addDoubleField("Start Gate [V]", -7.0);
+        gateStop  = gateParams.addDoubleField("Stop Gate [V]", -2.0);
+        gateSteps = gateParams.addIntegerField("No. Steps", 11);
         gateParams.addSeparator();
-        gateTime  = gateParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("GTEM-gateTime", 20.0));
+        gateTime = gateParams.addDoubleField("Hold Time [s]", 20.0);
 
         // Set-up heater parameters panel
-        heaterStart = heaterParams.addDoubleField("Start Heater [V]", c.getDoubleOrDefault("GTEM-heaterStart", 0.0));
-        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", c.getDoubleOrDefault("GTEM-heaterStop", -5.0));
-        heaterSteps = heaterParams.addIntegerField("No. Steps", c.getIntOrDefault("GTEM-heaterSteps", 11));
+        heaterStart = heaterParams.addDoubleField("Start Heater [V]", 0.0);
+        heaterStop  = heaterParams.addDoubleField("Stop Heater [V]", -5.0);
+        heaterSteps = heaterParams.addIntegerField("No. Steps", 11);
         heaterParams.addSeparator();
-        heaterTime  = heaterParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("GTEM-heaterTime", 30.0));
+        heaterTime = heaterParams.addDoubleField("Hold Time [s]", 30.0);
 
         // Set-up other parameters panel
-        intTime    = otherParams.addDoubleField("Integration Time [s]", c.getDoubleOrDefault("GTEM-intTime", 200e-3));
-        outputFile = otherParams.addFileSave("Output File", c.getStringOrDefault("GTEM-outputFile", ""));
+        intTime    = otherParams.addDoubleField("Integration Time [s]", 200e-3);
+        outputFile = otherParams.addFileSave("Output File", "");
 
-        // Save values to config file when changed
-        gateStart.setOnChange(() -> c.set("GTEM-gateStart", gateStart.get()));
-        gateStop.setOnChange(() -> c.set("GTEM-gateStop", gateStop.get()));
-        gateSteps.setOnChange(() -> c.set("GTEM-gateSteps", gateSteps.get()));
-        gateTime.setOnChange(() -> c.set("GTEM-gateTime", gateTime.get()));
-        heaterStart.setOnChange(() -> c.set("GTEM-heaterStart", heaterStart.get()));
-        heaterStop.setOnChange(() -> c.set("GTEM-heaterStop", heaterStop.get()));
-        heaterSteps.setOnChange(() -> c.set("GTEM-heaterSteps", heaterSteps.get()));
-        heaterTime.setOnChange(() -> c.set("GTEM-heaterTime", heaterTime.get()));
-        intTime.setOnChange(() -> c.set("GTEM-intTime", intTime.get()));
-        outputFile.setOnChange(() -> c.set("GTEM-outputFile", outputFile.get()));
+        gateParams.loadFromConfig("tem-gate-params", mainWindow.configStore);
+        heaterParams.loadFromConfig("tem-heater-params", mainWindow.configStore);
+        otherParams.loadFromConfig("tem-other-params", mainWindow.configStore);
 
-        Grid topGrid    = new Grid("", gateParams, heaterParams, otherParams);
-        Grid bottomGrid = new Grid("", heaterPlot, gatePlot, thermalPlot, tpPlot);
-        bottomGrid.setNumColumns(2);
-        ;
+        Grid topGrid    = new Grid(3, gateParams, heaterParams, otherParams);
+        Grid bottomGrid = new Grid(2, heaterPlot, gatePlot, thermalPlot, tpPlot);
 
         add(topGrid);
         add(bottomGrid);
-        add(new Grid("", table));
+        add(new Grid(1, table));
 
         heaterPlot.showLegend(false);
         gatePlot.showLegend(true);
@@ -125,11 +113,11 @@ public class GatedTEMTab extends Grid {
             disableInputs(true);
 
             // Get the instruments that have been configured on the config tabs
-            SMU                thermoVoltage   = mainWindow.smuConfigTab.tvSMU.getSMU();
-            SMU                hotGateVoltage  = mainWindow.smuConfigTab.hotGateSMU.getSMU();
-            SMU                coldGateVoltage = mainWindow.smuConfigTab.coldGateSMU.getSMU();
-            SMU                heaterVoltage   = mainWindow.smuConfigTab.heaterSMU.getSMU();
-            TC                 stageTemp       = mainWindow.tcConfigTab.stage.getTController();
+            VMeter             thermoVoltage   = mainWindow.smuConfigTab.tvSMU.get();
+            SMU                hotGateVoltage  = mainWindow.smuConfigTab.hotGateSMU.get();
+            SMU                coldGateVoltage = mainWindow.smuConfigTab.coldGateSMU.get();
+            SMU                heaterVoltage   = mainWindow.smuConfigTab.heaterSMU.get();
+            TC                 stageTemp       = mainWindow.tcConfigTab.stage.get();
             LinkedList<String> errors          = new LinkedList<>();
 
             // Check that everything is present and configured
@@ -211,20 +199,53 @@ public class GatedTEMTab extends Grid {
      */
     private void configurePlots(ResultTable results) {
 
+        // == HEATER POWER PLOT ========================================================================================
         heaterPlot.clear();
-        heaterPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER, "Heater", Color.TEAL);
 
+        heaterPlot.createSeries()
+                  .watch(results, GatedTEM.COL_NUMBER, GatedTEM.COL_HEATER_POWER)
+                  .setName("Heater")
+                  .setColour(Colour.TEAL);
+
+        // == GATE VOLTAGE PLOT ========================================================================================
         gatePlot.clear();
-        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0, "Hot-Gate", Color.ORANGERED);
-        gatePlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0, "Cold-Gate", Color.CORNFLOWERBLUE);
 
+        // For gate-config 0 (hot-gate)
+        gatePlot.createSeries()
+                .watch(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE)
+                .filter(r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0)
+                .setName("Hot-Gate")
+                .setColour(Colour.ORANGERED);
 
+        // For gate-config 1 (cold-gate)
+        gatePlot.createSeries()
+                .watch(results, GatedTEM.COL_NUMBER, GatedTEM.COL_GATE_VOLTAGE)
+                .filter(r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0)
+                .setName("Cold-Gate")
+                .setColour(Colour.CORNFLOWERBLUE);
+
+        // == THERMO-VOLTAGE PLOT ======================================================================================
         thermalPlot.clear();
-        thermalPlot.watchList(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE, "Thermo-Voltage", Color.PURPLE);
 
+        thermalPlot.createSeries()
+                   .watch(results, GatedTEM.COL_NUMBER, GatedTEM.COL_THERMO_VOLTAGE)
+                   .setName("Thermo-Voltage")
+                   .setColour(Colour.PURPLE);
+
+        // == THERMO VS HEATER PLOT ====================================================================================
         tpPlot.clear();
-        tpPlot.watchListSplit(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0);
-        tpPlot.watchListSplit(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE, GatedTEM.COL_GATE_SET_VOLTAGE, r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0);
+
+        // For gate-config 0 (hot-gate)
+        tpPlot.createSeries()
+              .watch(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE)  // Plot HP on x, TV on y
+              .filter(r -> r.get(GatedTEM.COL_GATE_CONFIG) == 0.0)                     // Only want gate config 0
+              .split(GatedTEM.COL_GATE_SET_VOLTAGE);                                   // Split by set gate voltage
+
+        // For gate-config 1 (cold-gate)
+        tpPlot.createSeries()
+              .watch(results, GatedTEM.COL_HEATER_POWER, GatedTEM.COL_THERMO_VOLTAGE)  // Plot HP on x, TV on y
+              .filter(r -> r.get(GatedTEM.COL_GATE_CONFIG) == 1.0)                     // Only want gate config 1
+              .split(GatedTEM.COL_GATE_SET_VOLTAGE);                                   // Split by set gate voltage
 
         table.clear();
         table.watchList(results);

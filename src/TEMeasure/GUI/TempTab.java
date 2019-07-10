@@ -38,16 +38,17 @@ public class TempTab extends Grid {
 
         Fields         control  = new Fields("Control");
         Field<Double>  setPoint = control.addDoubleField("Set-Point [K]");
-        Field<Integer> range    = control.addChoice("Heater Range", "Off", "Low", "Medium", "High");
-
+        Field<Integer> range    = control.addChoice("Heater Range", "Off (0%)", "Low (1%)", "Medium (10%)", "High (100%)");
 
 
         ClickHandler refresh = () -> {
 
-            TC t = mainWindow.tcConfigTab.stage.getTController();
+            TC t = mainWindow.tcConfigTab.stage.get();
 
             if (t != null) {
+
                 try {
+
                     setPoint.set(t.getTargetTemperature());
                     double ra = t.getHeaterRange();
 
@@ -56,10 +57,15 @@ public class TempTab extends Grid {
                     } else {
                         range.set((int) Math.floor(Math.log10(ra)) + 1);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+
+                }
+
             } else {
+
                 setPoint.set(297.0);
                 range.set(0);
+
             }
         };
 
@@ -67,10 +73,14 @@ public class TempTab extends Grid {
 
         control.addButton("Apply", () -> {
 
-            TC tc = mainWindow.tcConfigTab.stage.getTController();
+            TC tc = mainWindow.tcConfigTab.stage.get();
 
             if (tc == null) {
-                GUI.errorAlert("Error", "T-Controller Not Configured", "The temperature controller is not properly configured.");
+                GUI.errorAlert(
+                        "Error",
+                        "T-Controller Not Configured",
+                        "The temperature controller is not properly configured."
+                );
                 return;
             }
 
@@ -104,39 +114,42 @@ public class TempTab extends Grid {
         add(tPlot);
         add(hPlot);
 
-        logger = new RTask(2500, () -> {
-            log.addData(
-                    logger.getSecFromStart() / 60.0,
-                    sample.getTemperature(),
-                    radiation.getTemperature(),
-                    firstStage.getTemperature(),
-                    secondStage.getTemperature(),
-                    sample.getHeaterPower(),
-                    radiation.getHeaterPower(),
-                    firstStage.getHeaterPower(),
-                    secondStage.getHeaterPower(),
-                    sample.getPValue(),
-                    radiation.getPValue(),
-                    firstStage.getPValue(),
-                    secondStage.getPValue(),
-                    sample.getIValue(),
-                    radiation.getIValue(),
-                    firstStage.getIValue(),
-                    secondStage.getIValue(),
-                    sample.getDValue(),
-                    radiation.getDValue(),
-                    firstStage.getDValue(),
-                    secondStage.getDValue(),
-                    sample.getTargetTemperature(),
-                    radiation.getTargetTemperature(),
-                    firstStage.getTargetTemperature(),
-                    secondStage.getTargetTemperature()
-            );
-        });
+        logger = new RTask(2500, () -> log.addData(
+                logger.getSecFromStart() / 60.0,
+                sample.getTemperature(),
+                radiation.getTemperature(),
+                firstStage.getTemperature(),
+                secondStage.getTemperature(),
+                sample.getHeaterPower(),
+                radiation.getHeaterPower(),
+                firstStage.getHeaterPower(),
+                secondStage.getHeaterPower(),
+                sample.getPValue(),
+                radiation.getPValue(),
+                firstStage.getPValue(),
+                secondStage.getPValue(),
+                sample.getIValue(),
+                radiation.getIValue(),
+                firstStage.getIValue(),
+                secondStage.getIValue(),
+                sample.getDValue(),
+                radiation.getDValue(),
+                firstStage.getDValue(),
+                secondStage.getDValue(),
+                sample.getTargetTemperature(),
+                radiation.getTargetTemperature(),
+                firstStage.getTargetTemperature(),
+                secondStage.getTargetTemperature()
+        ));
 
 
         addToolbarButton("Start", () -> {
-            connect( mainWindow.tcConfigTab.stage,  mainWindow.tcConfigTab.shield,  mainWindow.tcConfigTab.fStage,  mainWindow.tcConfigTab.sStage);
+            connect(
+                    mainWindow.tcConfigTab.stage,
+                    mainWindow.tcConfigTab.shield,
+                    mainWindow.tcConfigTab.fStage,
+                    mainWindow.tcConfigTab.sStage
+            );
             start();
         });
 
@@ -165,7 +178,8 @@ public class TempTab extends Grid {
         String fileName = String.format("TLog-%d.csv", System.currentTimeMillis());
 
         try {
-            log = new ResultStream(fileName,
+            log = new ResultStream(
+                    fileName,
                     "Time",
                     "Sample",
                     "Radiation",
@@ -200,43 +214,87 @@ public class TempTab extends Grid {
         tPlot.clear();
         hPlot.clear();
 
-        Series sample        = tPlot.watchList(log, 0, 1, "Sample", Color.RED);
-        Series sampleSP      = tPlot.watchList(log, 0, 21, "Sample SP", Color.ORANGE);
-        Series radiation     = tPlot.watchList(log, 0, 2, "Radiation", Color.GOLD);
-        Series radiationSP   = tPlot.watchList(log, 0, 22, "Radiation SP", Color.YELLOW);
-        Series firstStage    = tPlot.watchList(log, 0, 3, "First Stage", Color.GREEN);
-        Series firstStageSP  = tPlot.watchList(log, 0, 23, "First Stage SP", Color.LIME);
-        Series secondStage   = tPlot.watchList(log, 0, 4, "Second Stage", Color.BLUE);
-        Series secondStageSP = tPlot.watchList(log, 0, 24, "Second Stage SP", Color.CORNFLOWERBLUE);
+        tPlot.createSeries()
+             .watch(log, 0, 1)
+             .setName("Sample")
+             .setColour(Colour.RED)
+             .showMarkers(false);
 
-        sample.showMarkers(false);
-        sampleSP.showMarkers(false);
-        radiation.showMarkers(false);
-        radiationSP.showMarkers(false);
-        firstStage.showMarkers(false);
-        firstStageSP.showMarkers(false);
-        secondStage.showMarkers(false);
-        secondStageSP.showMarkers(false);
+        tPlot.createSeries()
+             .watch(log, 0, 21)
+             .setName("Sample SP")
+             .setColour(Colour.ORANGE)
+             .showMarkers(false);
 
-        Series hSample      = hPlot.watchList(log, 0, 5, "Sample", Color.RED);
-        Series hRadiation   = hPlot.watchList(log, 0, 6, "Radiation", Color.GOLD);
-        Series hFirstStage  = hPlot.watchList(log, 0, 7, "First Stage", Color.GREEN);
-        Series hSecondStage = hPlot.watchList(log, 0, 8, "Second Stage", Color.BLUE);
+        tPlot.createSeries()
+             .watch(log, 0, 2)
+             .setName("Radiation")
+             .setColour(Colour.GOLD)
+             .showMarkers(false);
 
-        hSample.showMarkers(false);
-        hRadiation.showMarkers(false);
-        hFirstStage.showMarkers(false);
-        hSecondStage.showMarkers(false);
+        tPlot.createSeries()
+             .watch(log, 0, 22)
+             .setName("Radiation SP")
+             .setColour(Colour.YELLOW)
+             .showMarkers(false);
+
+        tPlot.createSeries()
+             .watch(log, 0, 3)
+             .setName("First Stage")
+             .setColour(Colour.GREEN)
+             .showMarkers(false);
+
+        tPlot.createSeries()
+             .watch(log, 0, 23)
+             .setName("First Stage SP")
+             .setColour(Colour.LIME)
+             .showMarkers(false);
+
+        tPlot.createSeries()
+             .watch(log, 0, 4)
+             .setName("Second Stage")
+             .setColour(Colour.BLUE)
+             .showMarkers(false);
+
+        tPlot.createSeries()
+             .watch(log, 0, 24)
+             .setName("Second Stage SP")
+             .setColour(Colour.CORNFLOWERBLUE)
+             .showMarkers(false);
+
+        hPlot.createSeries()
+             .watch(log, 0, 5)
+             .setName("Sample")
+             .setColour(Color.RED)
+             .showMarkers(false);
+
+        hPlot.createSeries()
+             .watch(log, 0, 6)
+             .setName("Radiation")
+             .setColour(Color.GOLD)
+             .showMarkers(false);
+
+        hPlot.createSeries()
+             .watch(log, 0, 7)
+             .setName("First Stage")
+             .setColour(Color.GREEN)
+             .showMarkers(false);
+
+        hPlot.createSeries()
+             .watch(log, 0, 8)
+             .setName("Second Stage")
+             .setColour(Color.BLUE)
+             .showMarkers(false);
 
         logger.start();
 
     }
 
     private void connect(TCConfig s, TCConfig r, TCConfig fs, TCConfig ss) {
-        sample = s.getTController();
-        radiation = r.getTController();
-        firstStage = fs.getTController();
-        secondStage = ss.getTController();
+        sample      = s.get();
+        radiation   = r.get();
+        firstStage  = fs.get();
+        secondStage = ss.get();
     }
 
 }

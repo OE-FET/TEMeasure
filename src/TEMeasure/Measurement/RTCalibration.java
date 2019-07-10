@@ -4,6 +4,7 @@ import JISA.Devices.DeviceException;
 import JISA.Devices.SMU;
 import JISA.Devices.TC;
 import JISA.Enums.Source;
+import JISA.Experiment.Col;
 import JISA.Experiment.Measurement;
 import JISA.Experiment.ResultTable;
 import JISA.Util;
@@ -12,35 +13,45 @@ import java.io.IOException;
 
 public class RTCalibration extends Measurement {
 
-    public static final String[] COLUMNS               = {"No.", "Sweep No.", "Sample Temperature", "Heater Voltage", "Heater Current", "Heater Power", "RT Voltage", "RT Current", "RT Resistance"};
-    public static final String[] UNITS                 = {"~", "~", "K", "V", "A", "W", "V", "A", "Ohms"};
-    public static final int      COL_NUMBER            = 0;
-    public static final int      COL_SWEEP             = 1;
-    public static final int      COL_STAGE_TEMPERATURE = 2;
-    public static final int      COL_HEATER_VOLTAGE    = 3;
-    public static final int      COL_HEATER_CURRENT    = 4;
-    public static final int      COL_HEATER_POWER      = 5;
-    public static final int      COL_RT_VOLTAGE        = 6;
-    public static final int      COL_RT_CURRENT        = 7;
-    public static final int      COL_RT_RESISTANCE     = 8;
-    private             SMU      heater;
-    private             SMU      rt;
-    private             TC       stageTC;
-    private             int      sweeps;
-    private             double   heaterStart;
-    private             double   heaterStop;
-    private             int      heaterSteps;
-    private             double   rtStart;
-    private             double   rtStop;
-    private             int      rtSteps;
-    private             double   intTime;
-    private             int      delTime;
-    private             int      heaterDelay;
-    private             int      restDelay;
+    public static final Col[] COLUMNS = {
+            new Col("No."),
+            new Col("Sweep No."),
+            new Col("Sample Temperature", "K"),
+            new Col("Heater Voltage", "V"),
+            new Col("Heater Current", "A"),
+            new Col("Heater Power", "W"),
+            new Col("RT Voltage", "V"),
+            new Col("RT Current", "A"),
+            new Col("RT Resistance", "Ohms")
+    };
+
+    public static final int    COL_NUMBER            = 0;
+    public static final int    COL_SWEEP             = 1;
+    public static final int    COL_STAGE_TEMPERATURE = 2;
+    public static final int    COL_HEATER_VOLTAGE    = 3;
+    public static final int    COL_HEATER_CURRENT    = 4;
+    public static final int    COL_HEATER_POWER      = 5;
+    public static final int    COL_RT_VOLTAGE        = 6;
+    public static final int    COL_RT_CURRENT        = 7;
+    public static final int    COL_RT_RESISTANCE     = 8;
+    private             SMU    heater;
+    private             SMU    rt;
+    private             TC     stageTC;
+    private             int    sweeps;
+    private             double heaterStart;
+    private             double heaterStop;
+    private             int    heaterSteps;
+    private             double rtStart;
+    private             double rtStop;
+    private             int    rtSteps;
+    private             double intTime;
+    private             int    delTime;
+    private             int    heaterDelay;
+    private             int    restDelay;
 
     public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC) {
-        heater = heaterSMU;
-        rt = rtSMU;
+        heater       = heaterSMU;
+        rt           = rtSMU;
         this.stageTC = stageTC;
     }
 
@@ -146,13 +157,8 @@ public class RTCalibration extends Measurement {
     }
 
     @Override
-    public String[] getColumns() {
+    public Col[] getColumns() {
         return COLUMNS;
-    }
-
-    @Override
-    public String[] getUnits() {
-        return UNITS;
     }
 
 
@@ -172,7 +178,7 @@ public class RTCalibration extends Measurement {
      */
     public RTCalibration configureHeater(double start, double stop, int steps) {
         heaterStart = start;
-        heaterStop = stop;
+        heaterStop  = stop;
         heaterSteps = steps;
         return this;
     }
@@ -188,7 +194,7 @@ public class RTCalibration extends Measurement {
      */
     public RTCalibration configureRT(double start, double stop, int steps) {
         rtStart = start;
-        rtStop = stop;
+        rtStop  = stop;
         rtSteps = steps;
         return this;
     }
@@ -204,9 +210,9 @@ public class RTCalibration extends Measurement {
      */
     public RTCalibration configureTiming(double heaterHold, double delayTime, double restTime, double integrationTime) {
         heaterDelay = (int) (heaterHold * 1000);
-        delTime = (int) (delayTime * 1000);
-        restDelay = (int) (restTime * 1000);
-        intTime = integrationTime;
+        delTime     = (int) (delayTime * 1000);
+        restDelay   = (int) (restTime * 1000);
+        intTime     = integrationTime;
         return this;
     }
 
