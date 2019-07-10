@@ -40,6 +40,7 @@ public class RTCalibrationTab extends Grid {
     private final Plot  heaterPPlot = new Plot("Heater Power", "Measurement No.", "Heater Power [W]");
     private final Plot  rtPlot      = new Plot("RT Resistance", "Measurement No.", "Resistance [Ohms]");
     private final Table table       = new Table("Table of Results");
+    private final Field<Double> restTime;
 
     private RTCalibration measurement = null;
 
@@ -63,6 +64,7 @@ public class RTCalibrationTab extends Grid {
         heaterSteps = heaterParams.addIntegerField("No. Steps", c.getIntOrDefault("RTC-heaterSteps", 11));
         heaterParams.addSeparator();
         heaterTime  = heaterParams.addDoubleField("Hold Time [s]", c.getDoubleOrDefault("RTC-heaterTime", 30.0));
+        restTime    = heaterParams.addDoubleField("Resting Time [s]",  c.getDoubleOrDefault("RTC-restTime", 300));
 
         // Set-up heater parameters panel
         rtStart = rtParams.addDoubleField("Start Current [A]", c.getDoubleOrDefault("RTC-rtStart", 100e-6));
@@ -87,6 +89,7 @@ public class RTCalibrationTab extends Grid {
         nSweeps.setOnChange(() -> c.set("RTC-nSweeps", nSweeps.get()));
         intTime.setOnChange(() -> c.set("RTC-intTime", intTime.get()));
         outputFile.setOnChange(() -> c.set("RTC-outputFile", outputFile.get()));
+        restTime.setOnChange(() -> c.set("RTC-restTime", restTime.get()));
 
 
         Grid topGrid    = new Grid("", heaterParams, rtParams, otherParams);
@@ -171,7 +174,7 @@ public class RTCalibrationTab extends Grid {
 
             measurement.configureRT(rtStart.get(), rtStop.get(), rtSteps.get())
                        .configureHeater(heaterStart.get(), heaterStop.get(), heaterSteps.get())
-                       .configureTiming(heaterTime.get(), rtTime.get(), intTime.get())
+                       .configureTiming(heaterTime.get(), rtTime.get(), restTime.get(), intTime.get())
                        .configureSweeps(nSweeps.get());
 
             ResultTable results = measurement.newResults(outputFile.get());

@@ -36,6 +36,7 @@ public class RTCalibration extends Measurement {
     private             double   intTime;
     private             int      delTime;
     private             int      heaterDelay;
+    private             int      restDelay;
 
     public RTCalibration(SMU heaterSMU, SMU rtSMU, TC stageTC) {
         heater = heaterSMU;
@@ -74,6 +75,8 @@ public class RTCalibration extends Measurement {
             // Initial value
             heater.setVoltage(heaterStart);
             heater.turnOn();
+
+            sleep(heaterDelay);
 
             for (double H : heaters) {
 
@@ -199,9 +202,10 @@ public class RTCalibration extends Measurement {
      *
      * @return Self-reference, for chaining
      */
-    public RTCalibration configureTiming(double heaterHold, double delayTime, double integrationTime) {
+    public RTCalibration configureTiming(double heaterHold, double delayTime, double restTime, double integrationTime) {
         heaterDelay = (int) (heaterHold * 1000);
         delTime = (int) (delayTime * 1000);
+        restDelay = (int) (restTime * 1000);
         intTime = integrationTime;
         return this;
     }
