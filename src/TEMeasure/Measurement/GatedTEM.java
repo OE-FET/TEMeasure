@@ -1,8 +1,6 @@
 package TEMeasure.Measurement;
 
-import JISA.Devices.SMU;
-import JISA.Devices.TC;
-import JISA.Devices.VMeter;
+import JISA.Devices.*;
 import JISA.Experiment.Col;
 import JISA.Experiment.Measurement;
 import JISA.Experiment.ResultTable;
@@ -70,23 +68,12 @@ public class GatedTEM extends Measurement {
         coldGate.turnOff();
         heater.turnOff();
 
-        hotGate.useFourProbe(false);
-        coldGate.useFourProbe(false);
-        heater.useFourProbe(false);
-
         // Set integration time of thermo-voltage smu
         thermoVoltage.setIntegrationTime(intTime);
-        thermoVoltage.useAutoVoltageRange();
-
-        if (thermoVoltage instanceof SMU) {
-            ((SMU) thermoVoltage).setCurrentRange(10e-12);
-        }
 
         // Configure gate SMUs
-        hotGate.useAutoRanges();
         hotGate.setVoltage(gateStart);
         hotGate.setOffMode(SMU.OffMode.HIGH_IMPEDANCE);
-        coldGate.useAutoRanges();
         coldGate.setVoltage(gateStart);
         coldGate.setOffMode(SMU.OffMode.HIGH_IMPEDANCE);
 
@@ -152,8 +139,8 @@ public class GatedTEM extends Measurement {
                             heaterPower,                 // Heater power
                             thermoVoltage.getVoltage(),  // Thermo-voltage
                             G,                           // Gate set-point
-                            config,                       // Hot-Gate (0) or Cold-Gate (1) ?
-                            thermoVoltage instanceof SMU ? ((SMU) thermoVoltage).getCurrent() : 0.0
+                            config,                      // Hot-Gate (0) or Cold-Gate (1) ?
+                            thermoVoltage instanceof IMeter ? ((IMeter) thermoVoltage).getCurrent() : 0.0 // If TV voltmeter can measure current, then do so
                     );
 
                     currentStep++;

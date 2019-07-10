@@ -70,13 +70,9 @@ public class RTCalibration extends Measurement {
 
         // Configure heater SMU
         heater.setSource(Source.VOLTAGE);
-        heater.useAutoRanges();
-        heater.useFourProbe(false);
 
         // Configure RT SMU
         rt.setSource(Source.CURRENT);
-        rt.useAutoRanges();
-        rt.useFourProbe(true);
         rt.setIntegrationTime(intTime);
 
         int currentStep = 0;
