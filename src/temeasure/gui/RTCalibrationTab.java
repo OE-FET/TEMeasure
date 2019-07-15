@@ -90,31 +90,12 @@ public class RTCalibrationTab extends Grid {
         addToolbarButton("Start", this::run);
         addToolbarButton("Stop", this::stop);
 
-        fillDefaults();
-
     }
 
     private void disableInputs(boolean disable) {
         heaterParams.setFieldsDisabled(disable);
         rtParams.setFieldsDisabled(disable);
         otherParams.setFieldsDisabled(disable);
-    }
-
-    private void fillDefaults() {
-
-        heaterStart.set(0.0);
-        heaterStop.set(5.0);
-        heaterSteps.set(6);
-        heaterTime.set(10.0);
-
-        rtStart.set(100.0e-6);
-        rtStop.set(100.0e-6);
-        rtSteps.set(1);
-        rtTime.set(0.1);
-
-        intTime.set(10.0 / 50.0);
-        nSweeps.set(3);
-
     }
 
     private void run() {
